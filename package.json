@@ -1,7 +1,7 @@
 {
-  "name": "signalk-empirebus-plugin",
+  "name": "signalk-empirbusnxt-plugin",
   "version": "1.0.0",
-  "description": "Empire Bus Control",
+  "description": "EmpirBus NXT Control",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

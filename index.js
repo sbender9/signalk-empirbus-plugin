@@ -25,8 +25,8 @@ module.exports = function(app) {
   var options
   var empireBusInstance
 
-  plugin.id = "signalk-empirebus-writer";
-  plugin.name = "Empire Bus Control";
+  plugin.id = "signalk-empiebus-nxt";
+  plugin.name = "EmpirBus NXT Control";
 
   plugin.start = function(theOptions) {
     options = theOptions
