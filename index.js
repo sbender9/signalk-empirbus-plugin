@@ -26,10 +26,10 @@ module.exports = function(app) {
   var plugin = {};
   var unsubscribes = []
   var options
-  var empireBusInstance
+  var empirBusInstance
 
   plugin.id = "signalk-empirbus-nxt";
-  plugin.name = "Empire Bus Control";
+  plugin.name = "EmpirBus NXT Control";
 
   plugin.start = function(theOptions) {
     options = theOptions
