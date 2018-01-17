@@ -14,7 +14,10 @@
     "email": "scott@scottbender.net"
   },
   "contributors": [
-    {}
+    {
+      "name": "Christian Wegerhoff",
+      "email": "wegerhoff@mediaworx.com"
+    }
   ],
   "license": "ISC",
   "dependencies": {
