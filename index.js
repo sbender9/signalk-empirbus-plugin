@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-const debug = require("debug")("signalk-empirbus")
+const debug = require("debug")("signalk-empirbusnxt")
 const path = require('path')
 
 const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
+const pgnNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
+const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
 
 module.exports = function(app) {
   var plugin = {};
   var unsubscribes = []
   var options
-  var empirBusInstance
+  var empireBusInstance
 
   plugin.id = "signalk-empirbus-nxt";
-  plugin.name = "EmpirBus NXT Control";
+  plugin.name = "Empire Bus Control";
 
   plugin.start = function(theOptions) {
     options = theOptions
@@ -37,7 +39,7 @@ module.exports = function(app) {
   }
 
   var listener = (msg) => {
-    if ( msg.pgn == 65280 && pgn['Manufacturer Code'] == manufacturerCode ) {
+    if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) {
       const instancePath = 'electrical.switchbank.0'
 
       app.handleMessage(plugin.id, {
@@ -83,14 +85,14 @@ module.exports = function(app) {
         0x00
       ]
 
-      //FIXME: need a way to know the n2k device to send to
+      // Send out to all devices with pgnAddress = 255
       app.emit('nmea2000out',
-               toActisenseSerialFormat(65280, pgn_data, 123)) 
+               toActisenseSerialFormat(pgnNumber, pgn_data, pgnAddress)) 
     })
   }
 
   plugin.schema = {
-    title: "EmpirBus NXT",
+    title: "Empire Bus",
     type: 'object',
     properties: {
     }
