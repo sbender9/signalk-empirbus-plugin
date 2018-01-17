@@ -77,7 +77,7 @@ module.exports = function(app) {
           .tinyInt(0x00) //Reserved
           .tinyInt(4, 3) //Industry code?
       
-          //Data 4x dimmer values + 8x switch states accordind to "Data Model 1"     
+          //Data 4x dimmer values + 8x switch states according to "Data Model 1"     
           .uint8(<dimmer1.value>)
           .uint8(<dimmer2.value>)
           .uint8(<dimmer3.value>)
