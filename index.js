@@ -41,7 +41,7 @@ module.exports = function(app) {
 
   var listener = (msg) => {
     if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) {
-      const instancePath = 'electrical.switchbank.0'
+      const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmer/switch.<#>.state/value
 
       app.handleMessage(plugin.id, {
         updates: [
@@ -72,13 +72,28 @@ module.exports = function(app) {
       const aswitch = req.params.switch
       const state = req.params.state
 
-      var data = 10; //??
       var pgn_data = Concentrate()
           .tinyInt(manufacturerCode, 11)
           .tinyInt(0x00) //Reserved
-          .tinyInt(4, 3) //Indestry code?
-          .tinyInt(data) //Data
-          .result()
+          .tinyInt(4, 3) //Industry code?
+      
+          //Data 4x dimmer values + 8x switch states accordind to "Data Model 1"     
+          .uint8(<dimmer1.value>)
+          .uint8(<dimmer2.value>)
+          .uint8(<dimmer3.value>)
+          .uint8(<dimmer4.value>)
+      
+          .tinyInt(<switch1.state>, 1)
+          .tinyInt(<switch2.state>, 1)
+          .tinyInt(<switch3.state>, 1)
+          .tinyInt(<switch4.state>, 1)
+          .tinyInt(<switch5.state>, 1)
+          .tinyInt(<switch6.state>, 1)
+          .tinyInt(<switch7.state>, 1)
+          .tinyInt(<switch8.state>, 1)
+                 
+
+      .result()
 
       // Send out to all devices with pgnAddress = 255
       app.emit('nmea2000out',
@@ -87,7 +102,7 @@ module.exports = function(app) {
   }
 
   plugin.schema = {
-    title: "Empire Bus",
+    title: "Empire Bus NXT",
     type: 'object',
     properties: {
     }
