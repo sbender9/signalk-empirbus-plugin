@@ -16,6 +16,7 @@
 
 const debug = require("debug")("signalk-empirbusnxt")
 const path = require('path')
+const Concentrate = require("concentrate");
 
 const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
@@ -71,19 +72,13 @@ module.exports = function(app) {
       const aswitch = req.params.switch
       const state = req.params.state
 
-      var data = [
-        //ManufacturerCode, Reserved, Inductry Code, Data
-        0x00,
-        0x00,
-
-        //Data
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00
-      ]
+      var data = 10; //??
+      var pgn_data = Concentrate()
+          .tinyInt(manufacturerCode, 11)
+          .tinyInt(0x00) //Reserved
+          .tinyInt(4, 3) //Indestry code?
+          .tinyInt(data) //Data
+          .result()
 
       // Send out to all devices with pgnAddress = 255
       app.emit('nmea2000out',

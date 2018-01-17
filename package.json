@@ -21,7 +21,8 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "debug": "^2.2.0"
+    "debug": "^2.2.0",
+    "concentrate", "^0.2.3"
   },
   "repository": {
     "type": "git",
