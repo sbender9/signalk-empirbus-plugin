@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-const debug = require("debug")("signalk-empirebus")
+const debug = require("debug")("signalk-empirbus")
 const path = require('path')
 
-const manufacturerCode = 10 //Needs updated
+const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 
 module.exports = function(app) {
   var plugin = {};
   var unsubscribes = []
   var options
-  var empireBusInstance
+  var empirBusInstance
 
-  plugin.id = "signalk-empiebus-nxt";
+  plugin.id = "signalk-empirbus-nxt";
   plugin.name = "EmpirBus NXT Control";
 
   plugin.start = function(theOptions) {
@@ -90,7 +90,7 @@ module.exports = function(app) {
   }
 
   plugin.schema = {
-    title: "Empire Bus",
+    title: "EmpirBus NXT",
     type: 'object',
     properties: {
     }
