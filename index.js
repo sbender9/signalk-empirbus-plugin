@@ -123,6 +123,12 @@ module.exports = function(app) {
     title: "Empire Bus NXT",
     type: 'object',
     properties: {
+      dataModel: {
+        title: 'Data Model',
+        type: number,
+        enum: [ 1, 2, 3, 4, 5],
+        enumNames: [ 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5']
+      }
     }
   }
   
