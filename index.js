@@ -116,10 +116,10 @@ module.exports = function(app) {
 
           // Byte 3 .. byte 7 user data payload according to "Data Model 2"
           // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
-          .uInt16(<dimmer1.state> * 1000.0)     // Dimmer state convertet back to EmpirBus format 0...1000
+          .uInt16(<dimmer1.state> * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
           .uInt16(<dimmer2.state> * 1000.0)     // FIXME: needs to be dimmer/switch states from paramters
       
-          .tinyInt(<switch1.state> == "off" ? 0 : 1, 1) // Switch state convertet back to EmpirBus format 0/1
+          .tinyInt(<switch1.state> == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
           .tinyInt(<switch2.state> == "off" ? 0 : 1, 1) // FIXME: Should be a .map or loop
           .tinyInt(<switch3.state> == "off" ? 0 : 1, 1)
           .tinyInt(<switch4.state> == "off" ? 0 : 1, 1)
