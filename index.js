@@ -23,7 +23,7 @@
 
 const debug = require("debug")("signalk-empirbusnxt")
 const path = require('path')
-const Concentrate = require("concentrate");
+const Concentrate2 = require("concentrate2");
 const Bitfield = require("bitfield")
 const Int64LE = require('int64-buffer').Int64LE
 
@@ -90,7 +90,7 @@ module.exports = function(app) {
       const aswitch = req.params.switch
       const state = req.params.state
 
-      var pgn_data = Concentrate()
+      var pgn_data = Concentrate2()
           .tinyInt(manufacturerCode, 11)
           .tinyInt(0x00) //Reserved
           .tinyInt(4, 3) //Industry code?
