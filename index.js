@@ -61,7 +61,7 @@ module.exports = function(app) {
             values: [
               {
                 path: `${instancePath}.dummer.0.value`,
-                value: status.dimmers[0] / 255.0    //convert to ratio 0...1
+                value: status.dimmers[0] / 1000.0    //convert to ratio 0...1
               },
               {
                 path: `${instancePath}.switch.0.state`,
