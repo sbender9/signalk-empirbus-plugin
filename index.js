@@ -54,19 +54,26 @@ module.exports = function(app) {
 
       var status = readData(msg.fields['Data'])
 
+      var values = status.dimmers.map((value, index) => {
+        return {
+          path: `${instancePath}.${status.instance}.dimmers.${index}.state`,
+          value: value / 1000.0
+        }
+      })
+
+      values = values.concat(status.switches.map((value, index) => {
+        return {
+          path: `${instancePath}.${status.instance}.switches.${index}.state`,
+          value: value ? 'on' : 'off'
+        }
+      })
+                                      
+
       app.handleMessage(plugin.id, {
         updates: [
           {
             timestamp: (new Date()).toISOString(),
-            values: [
-              {
-                path: `${instancePath}.dummer.0.value`,
-                value: status.dimmers[0] / 1000.0    //convert to ratio 0...1
-              },
-              {
-                path: `${instancePath}.switch.0.state`,
-                value: status.switches[0] ? 'on' : 'off'
-              }]
+            values: values
           }
         ]
       })
