@@ -24,6 +24,8 @@
 const debug = require("debug")("signalk-empirbusnxt")
 const path = require('path')
 const Concentrate = require("concentrate");
+const Bitfield = require("bitfield")
+const Int64LE = require('int64-buffer').Int64LE
 
 const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
@@ -50,18 +52,20 @@ module.exports = function(app) {
     if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) {
       const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmer/switch.<#>.state/value
 
+      var status = readData(msg.fields['Data'])
+
       app.handleMessage(plugin.id, {
         updates: [
           {
             timestamp: (new Date()).toISOString(),
             values: [
               {
-                path: `${instancePath}.cabinLight.state`,
-                value: 'on'
+                path: `${instancePath}.dummer.0.value`,
+                value: status.dimmers[0] / 255.0    //convert to ratio 0...1
               },
               {
-                path: `${instancePath}.anchorLight.state`,
-                value: 'off'
+                path: `${instancePath}.switch.0.state`,
+                value: status.switches[0] ? 'on' : 'off'
               }]
           }
         ]
@@ -136,4 +140,19 @@ function toActisenseSerialFormat(pgn, data, dst) {
       .map(x => (x.length === 1 ? "0" + x : x))
       .join(",")
   );
+}
+
+function readData(data) {
+  var buf = new Int64LE(Number(data)).toBuffer()
+
+  var instance = buf.readUInt8(2)
+      
+  var dimmers = [ buf.readUInt16(3), buf.readUInt16(4) ]
+
+  var fields = new Bitfield(buf.slice(4))
+  var switches = []
+  for ( var i = 0; i < 8; i++ ) {
+    switches.push(fields.get(i))
+  }
+  return { instance: instance, dimmers: dimmers, switches: switches }
 }
