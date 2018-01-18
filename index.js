@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Key path according to EmpirBus Application Specific PGN Data Model 2 (4x word + 8x bit) per instance:
+// Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
 //
 // electrical.empirBusNxt.<NXT component instance 0..49>.dimmer.<#1..2>.value
