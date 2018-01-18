@@ -17,8 +17,8 @@
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
 //
-// electrical.empirBusNxt.<NXT component instance 0..49>.dimmer.<#1..2>.value
-// electrical.empirBusNxt.<NXT component instance 0..49>.switch.<#1..8>.value
+// electrical.empirBusNxt.<NXT component instance 0..49>.dimmers.<#1..2>.state
+// electrical.empirBusNxt.<NXT component instance 0..49>.switches.<#1..8>.state
 
 
 const debug = require("debug")("signalk-empirbusnxt")
@@ -50,7 +50,7 @@ module.exports = function(app) {
 
   var listener = (msg) => {
     if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) {
-      const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmer/switch.<#>.state/value
+      const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmers/switches.<#>.state
 
       var status = readData(msg.fields['Data'])
 
@@ -91,26 +91,43 @@ module.exports = function(app) {
       const state = req.params.state
 
       var pgn_data = Concentrate2()
+      
+          // PGN / CAN Frame Header
+          // ID:        Complete 29Bit Identifier = 0x1CFF00XX, where XX is SA of 3rd party device.
+          // Priority:  0x07
+          // EDP:       0
+          // DP:        0
+          // PF:        0xFE
+          // PS:        0x04 (Group Extention)
+          // Source Address: [0...252] probably Address of Actisense?      
           .tinyInt(manufacturerCode, 11)
           .tinyInt(0x00) //Reserved
           .tinyInt(4, 3) //Industry code?
       
-          //Data 4x dimmer values + 8x switch states according to "Data Model 1"     
-          .uint8(<dimmer1.value>)
-          .uint8(<dimmer2.value>)
-          .uint8(<dimmer3.value>)
-          .uint8(<dimmer4.value>)
-      
-          .tinyInt(<switch1.state>, 1)
-          .tinyInt(<switch2.state>, 1)
-          .tinyInt(<switch3.state>, 1)
-          .tinyInt(<switch4.state>, 1)
-          .tinyInt(<switch5.state>, 1)
-          .tinyInt(<switch6.state>, 1)
-          .tinyInt(<switch7.state>, 1)
-          .tinyInt(<switch8.state>, 1)
-                 
+          // Frame Data Contents according to EmpirBus Application Specific PGN
+          // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
+          // Byte 0 EmpirBus fixed value 0x30
+          // Byte 1 EmpirBus fixed value 0x99
+          .byte(0x30)
+          .byte(0x99)
 
+          // Byte 2 Instance 0..49, Unique Instance Field to distinguish / route the data
+          .byte(<instance>)  // FIXME: Needs to be relevant instance to address NXT component instance 
+
+          // Byte 3 .. byte 7 user data payload according to "Data Model 2"
+          // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
+          .uInt16(<dimmer1.state> * 1000.0)     // Dimmer state convertet back to EmpirBus format 0...1000
+          .uInt16(<dimmer2.state> * 1000.0)     // FIXME: needs to be dimmer/switch states from paramters
+      
+          .tinyInt(<switch1.state> == "off" ? 0 : 1, 1) // Switch state convertet back to EmpirBus format 0/1
+          .tinyInt(<switch2.state> == "off" ? 0 : 1, 1) // FIXME: Should be a .map or loop
+          .tinyInt(<switch3.state> == "off" ? 0 : 1, 1)
+          .tinyInt(<switch4.state> == "off" ? 0 : 1, 1)
+          .tinyInt(<switch5.state> == "off" ? 0 : 1, 1)
+          .tinyInt(<switch6.state> == "off" ? 0 : 1, 1)
+          .tinyInt(<switch7.state> == "off" ? 0 : 1, 1)
+          .tinyInt(<switch8.state> == "off" ? 0 : 1, 1)
+                 
       .result()
 
       // Send out to all devices with pgnAddress = 255
