@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
+// Key path according to EmpirBus Application Specific PGN Data Model 1 (4x byte + 8x bit) per instance:
+// 4x dimmer values 0 = off .. 255 = 100%, 8x switch values 0 = off / 1 = on
+//
+// electrical.empirBusNxt.<NXT component instance>.dimmer.<#0..3>.value
+// electrical.empirBusNxt.<NXT component instance>.switch.<#0..7>.value
+
+
 const debug = require("debug")("signalk-empirbusnxt")
 const path = require('path')
 const Concentrate = require("concentrate");
