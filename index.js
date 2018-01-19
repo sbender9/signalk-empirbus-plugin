@@ -49,7 +49,7 @@ module.exports = function(app) {
     
     debug("start");
     
-    app.on('N2KAnalyzerOut', listener)
+    app.on('N2KAnalyzerOut', plugin.listener)
 
     app.on("pipedProvidersStarted", (config) => {
       config.pipeElements.forEach(function(element) {

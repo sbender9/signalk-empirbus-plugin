@@ -61,9 +61,8 @@ const state = {
 
 const instance = 0
 
-function generateOne() {
-  return plugin.generateStatePGN(instance, state)
-}
-
-
-console.log(generateOne())
+console.log(plugin.generateStatePGN(instance, state))
+state.dimmers['0'].state.value = 1
+console.log(plugin.generateStatePGN(instance, state))
+state.switches['7'].state.value = 'on'
+console.log(plugin.generateStatePGN(instance, state))
