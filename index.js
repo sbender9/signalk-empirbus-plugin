@@ -48,8 +48,27 @@ module.exports = function(app) {
     debug("start");
     
     app.on('N2KAnalyzerOut', listener)
+
+    app.on("pipedProvidersStarted", (config) => {
+      config.pipeElements.forEach(function(element) {
+        var sendit = false
+        if ( typeof element.options != 'undefined' ) {
+          if ( typeof element.options.toChildProcess != 'undefined'
+               && element.options.toChildProcess == 'nmea2000out' )
+          {
+            sendit = true
+          }
+          else if ( element.type == 'providers/simple'
+                    && element.options.type == 'NMEA2000' ) {
+          }
+        }
+        if ( sendit ) {
+          sendStatusRequest()
+        }
+      })
+    })
   }
-  
+           
   var listener = (msg) => {
     if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) 
       var status = readData(msg.fields['Data'])
@@ -141,6 +160,25 @@ module.exports = function(app) {
       app.emit('nmea2000out',
                toActisenseSerialFormat(pgnNumber, pgn_data, pgnAddress)) 
     })
+  }
+
+  function sendStatusRequest() {
+    var pgn_data = Concentrate2()
+        .tinyInt(manufacturerCode, 11)
+        .tinyInt(0x00) //Reserved
+        .tinyInt(4, 3) //Industry code?
+        .uint8(0x00)
+        .uint8(0xff)
+        .uint8(0x00)
+        .uint8(0xff)
+        .uint8(0xff)
+        .uint8(0xff)
+        .uint8(0xff)
+        .uint8(0xff)
+        .result()
+    
+    app.emit('nmea2000out',
+             toActisenseSerialFormat(pgnNumber, pgn_data, 255)) 
   }
 
   plugin.schema = {
