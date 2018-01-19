@@ -26,8 +26,9 @@ const path = require('path')
 const Concentrate2 = require("concentrate2");
 const Bitfield = require("bitfield")
 const Int64LE = require('int64-buffer').Int64LE
+const _ = require('lodash')
 
-const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
+const manufacturerCode = "Empirbus" // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
 const pgnIsoNumber = 059904 // NMEA 2000 ISO request PGN 059904 - Single Frame, Destination Address Global
 const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
@@ -70,10 +71,11 @@ module.exports = function(app) {
     })
   }
            
-  var listener = (msg) => {
-    if ( msg.pgn == pgnApiNumber && pgn['Manufacturer Code'] == manufacturerCode ) 
-      var status = readData(msg.fields['Data'])
+  plugin.listener = (msg) => {
     
+    if ( msg.pgn == pgnApiNumber && msg.fields['Manufacturer Code'] == manufacturerCode ) {
+      var status = readData(msg.fields['Data'])
+
       var values = status.dimmers.map((value, index) => {
         return {
           path: `${instancePath}.${status.instance}.dimmers.${index}.state`,
@@ -97,10 +99,11 @@ module.exports = function(app) {
           }
         ]
       })
+    }
   }
   
   plugin.stop = () => {
-    app.removeListener('N2KAnalyzerOut', listener)
+    app.removeListener('N2KAnalyzerOut', plugin.listener)
   }
 
   plugin.registerWithRouter = (router) => {
@@ -123,32 +126,36 @@ module.exports = function(app) {
 
       current_state[switch_or_dimmer][aswitch].state.value = state
 
-      var concentrate = Concentrate2()
-      
-          // PGN 65280 Frame Data Contents according to EmpirBus Application Specific PGN
-          // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
-          // Byte 0 + Byte 1 EmpirBus manufacturer code and industry code: 0x30 0x99 = { "Manufacturer Code": "Empirbus","Industry Code":"Marine" }
-          .uint8(0x30)
-          .uint8(0x99)
-
-          // Byte 2 Instance 0..49, Unique Instance Field to distinguish / route the data
-          .uint8(instance)  // Instance of EmpirBus API component to send states to
-
-          // Byte 3 .. byte 7 user data payload according to "Data Model 2"
-          // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
-          .uint16(current_state.dimmers['0'].state.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
-          .uint16(current_state.dimmers['1'].state.value * 1000.0)     
-      
-      for ( var i = 0; i < 8; i++ ) {
-        concentrate.tinyInt(current_state.switches[i.toString()].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
-      }
-      
-      var pgn_data = concentrate.result()
-      
       // Send out to all devices by pgnAddress = 255
-      app.emit('nmea2000out',
-               toActisenseSerialFormat(pgnApiNumber, pgn_data, pgnAddress)) 
+      app.emit('nmea2000out', generateStatePGN(Number(instance), current_state))
     })
+  }
+
+  plugin.generateStatePGN = (instance, state) => {
+    var concentrate = Concentrate2()
+    // Frame Data Contents according to EmpirBus Application Specific PGN
+    // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
+    // Byte 0 EmpirBus fixed value 0x30
+    // Byte 1 EmpirBus fixed value 0x99
+        .uint8(0x30)
+        .uint8(0x99)
+    
+    // Byte 2 Instance 0..49, Unique Instance Field to distinguish / route the data
+        .uint8(instance)  // Instance of EmpirBus API component to send states to
+
+    // Byte 3 .. byte 7 user data payload according to "Data Model 2"
+    // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
+        .uint16(state.dimmers['0'].state.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
+        .uint16(state.dimmers['1'].state.value * 1000.0)     
+    
+    for ( var i = 0; i < 8; i++ ) {
+      concentrate.tinyInt(state.switches[i.toString()].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
+    }
+    
+    var pgn_data = concentrate.result()
+    
+    // Send out to all devices by pgnAddress = 255
+    return toActisenseSerialFormat(pgnApiNumber, pgn_data, pgnAddress)
   }
 
   function sendStatusRequest() {
@@ -218,7 +225,7 @@ function readData(data) {
 
   var instance = buf.readUInt8(2)
       
-  var dimmers = [ buf.readUInt16(3), buf.readUInt16(4) ]
+  var dimmers = [ buf.readUInt16LE(3), buf.readUInt16LE(4) ]
 
   var fields = new Bitfield(buf.slice(4))
   var switches = []

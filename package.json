@@ -19,12 +19,21 @@
       "email": "wegerhoff@mediaworx.com"
     }
   ],
+  "scripts": {
+    "test": "mocha --exit"
+  },
   "license": "ISC",
   "dependencies": {
     "debug": "^2.2.0",
     "concentrate2": "^0.0.1",
     "bitfield": "^1.1.2",
-    "int64-buffer": "^0.1.10"
+    "int64-buffer": "^0.1.10",
+    "lodash": "^4.17.4"
+  },
+  "devDependencies": {
+    "mocha": "^4.0.0",
+    "chai": "~4.1.0",
+    "chai-things": "0.2"
   },
   "repository": {
     "type": "git",
