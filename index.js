@@ -75,8 +75,12 @@ module.exports = function(app) {
     
     if ( msg.pgn == pgnApiNumber && msg.fields['Manufacturer Code'] == manufacturerCode ) {
       var status = readData(msg.fields['Data'])
+      app.handleMessage(plugin.id, createDelta(status))
+    }
+  }
 
-      var values = status.dimmers.map((value, index) => {
+  function createDelta(status) {
+    var values = status.dimmers.map((value, index) => {
         return {
           path: `${instancePath}.${status.instance}.dimmers.${index}.state`,
           value: value / 1000.0
@@ -91,16 +95,16 @@ module.exports = function(app) {
       }))
                                       
 
-      app.handleMessage(plugin.id, {
-        updates: [
-          {
-            timestamp: (new Date()).toISOString(),
-            values: values
-          }
-        ]
-      })
+    return {
+      updates: [
+        {
+          timestamp: (new Date()).toISOString(),
+          values: values
+        }
+      ]
     }
   }
+  plugin.createDelta = createDelta
   
   plugin.stop = () => {
     app.removeListener('N2KAnalyzerOut', plugin.listener)
@@ -196,8 +200,29 @@ module.exports = function(app) {
       */
     }
   }
+
+  function readData(data) {
+    var buf = new Int64LE(Number(data)).toBuffer()
+    return readDataBuffer(buf)
+  }
+  plugin.readData = readData
+
+  function readDataBuffer(buf) {
+    var instance = buf.readUInt8(0)
+    
+    var dimmers = [ buf.readUInt16LE(1), buf.readUInt16LE(3) ]
+    
+    var bits = buf.readUInt8(5)
+    var switches = []
+    for ( var i = 0; i < 8; i++ ) {
+      switches.push(bits >> i & 0x01)
+    }
+    return { instance: instance, dimmers: dimmers, switches: switches }
+  }
+  plugin.readDataBuffer = readDataBuffer
   
-return plugin;
+  
+  return plugin;
 }
 
 
@@ -220,17 +245,3 @@ function toActisenseSerialFormat(pgn, data, dst) {
   );
 }
 
-function readData(data) {
-  var buf = new Int64LE(Number(data)).toBuffer()
-
-  var instance = buf.readUInt8(2)
-      
-  var dimmers = [ buf.readUInt16LE(3), buf.readUInt16LE(4) ]
-
-  var fields = new Bitfield(buf.slice(4))
-  var switches = []
-  for ( var i = 0; i < 8; i++ ) {
-    switches.push(fields.get(i))
-  }
-  return { instance: instance, dimmers: dimmers, switches: switches }
-}
