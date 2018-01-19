@@ -28,7 +28,8 @@ const Bitfield = require("bitfield")
 const Int64LE = require('int64-buffer').Int64LE
 
 const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
-const pgnNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
+const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
+const pgnIsoNumber = 059904 // NMEA 2000 ISO request PGN 059904 - Single Frame, Destination Address Global
 const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
 const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmers/switches.<#>.state
 
@@ -70,7 +71,7 @@ module.exports = function(app) {
   }
            
   var listener = (msg) => {
-    if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) 
+    if ( msg.pgn == pgnApiNumber && pgn['Manufacturer Code'] == manufacturerCode ) 
       var status = readData(msg.fields['Data'])
     
       var values = status.dimmers.map((value, index) => {
@@ -123,17 +124,21 @@ module.exports = function(app) {
       current_state[switch_or_dimmer][aswitch].state.value = state
 
       var concentrate = Concentrate2()
-          // PGN / CAN Frame Header
-          // ID:        Complete 29Bit Identifier = 0x1CFF00XX, where XX is SA of 3rd party device.
+      
+          // FIXME: Do we need to send that? If yes how?
+          .tinyInt(manufacturerCode, 11)
+          .tinyInt(0x00) //Reserved
+          .tinyInt(4, 3) //Industry code?
+      
+          // PGN 65280 CAN Identifier
+          // ID:        Complete 29Bit Identifier = 0x1CFF00XX, where XX is SA of 3rd party device
           // Priority:  0x07
           // EDP:       0
           // DP:        0
           // PF:        0xFE
           // PS:        0x04 (Group Extention)
-          // Source Address: [0...252] probably Address of Actisense?      
-          .tinyInt(manufacturerCode, 11)
-          .tinyInt(0x00) //Reserved
-          .tinyInt(4, 3) //Industry code?
+          // Source Address: [0...252] assumed to be handeled by Actisense NGT-1?
+          .uint32(0x1CFF0000,29) // FIXME: Is this a 29bit format?
       
           // Frame Data Contents according to EmpirBus Application Specific PGN
           // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
@@ -143,12 +148,12 @@ module.exports = function(app) {
           .uint8(0x99)
 
           // Byte 2 Instance 0..49, Unique Instance Field to distinguish / route the data
-          .uint8(instance)  // FIXME: Needs to be relevant instance to address NXT component instance 
+          .uint8(instance)  // Instance of EmpirBus API component to send states to
 
           // Byte 3 .. byte 7 user data payload according to "Data Model 2"
           // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
           .uint16(current_state.dimmers['0'].state.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
-          .uint16(current_state.dimmers['0'].state.value * 1000.0)     // FIXME: needs to be dimmer/switch states from paramters
+          .uint16(current_state.dimmers['1'].state.value * 1000.0)     
       
       for ( var i = 0; i < 8; i++ ) {
         concentrate.tinyInt(current_state.switches[i.toString()].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
@@ -156,17 +161,36 @@ module.exports = function(app) {
       
       var pgn_data = concentrate.result()
       
-      // Send out to all devices with pgnAddress = 255
+      // Send out to all devices by pgnAddress = 255
       app.emit('nmea2000out',
-               toActisenseSerialFormat(pgnNumber, pgn_data, pgnAddress)) 
+               toActisenseSerialFormat(pgnApiNumber, pgn_data, pgnAddress)) 
     })
   }
 
   function sendStatusRequest() {
+    
+    // An ISO request PGN 059904 may be done to PGN 65280 on poweron for “easy sync”. 
+    // The ISO request will result in the NXT transmitting all configured instances of PGN 65280, 
+    // allowing a 3rd party product to “sync in” when it is powered up. 
+        
     var pgn_data = Concentrate2()
+
+        // FIXME: Do we need to send that? If yes how?
         .tinyInt(manufacturerCode, 11)
         .tinyInt(0x00) //Reserved
         .tinyInt(4, 3) //Industry code?
+    
+        // PGN 059904 CAN Identifier
+        // ID:        Complete 29Bit Identifier = 0x1CEAFFXX, where XX is SA of 3rd party device
+        // Priority:  0x07
+        // EDP:       0
+        // DP:        0
+        // PF:        0xEA
+        // PS:        0xFF (Global)
+        // Source Address: [0...252] assumed to be handeled by Actisense NGT-1?
+        .uint32(0x1CEAFF00,29) // FIXME: Is this a 29bit format?
+    
+        // Frame Data Contents 0x00 0xFF 0x00 0xFF 0xFF 0xFF 0xFF 0xFF
         .uint8(0x00)
         .uint8(0xff)
         .uint8(0x00)
@@ -178,7 +202,7 @@ module.exports = function(app) {
         .result()
     
     app.emit('nmea2000out',
-             toActisenseSerialFormat(pgnNumber, pgn_data, 255)) 
+             toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255)) 
   }
 
   plugin.schema = {
