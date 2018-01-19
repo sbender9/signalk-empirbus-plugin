@@ -14,49 +14,89 @@
  * limitations under the License.
  */
 
-const debug = require("debug")("signalk-empirebus")
-const path = require('path')
+// Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
+// 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
+//
+// electrical.empirBusNxt.<NXT component instance 0..49>.dimmers.<#1..2>.state
+// electrical.empirBusNxt.<NXT component instance 0..49>.switches.<#1..8>.state
 
-const manufacturerCode = 10 //Needs updated
+
+const debug = require("debug")("signalk-empirbusnxt")
+const path = require('path')
+const Concentrate2 = require("concentrate2");
+const Bitfield = require("bitfield")
+const Int64LE = require('int64-buffer').Int64LE
+
+const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
+const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
+const pgnIsoNumber = 059904 // NMEA 2000 ISO request PGN 059904 - Single Frame, Destination Address Global
+const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
+const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmers/switches.<#>.state
+
 
 module.exports = function(app) {
   var plugin = {};
   var unsubscribes = []
   var options
-  var empireBusInstance
+  var empirBusInstance
 
-  plugin.id = "signalk-empiebus-nxt";
+  plugin.id = "signalk-empirbus-nxt";
   plugin.name = "EmpirBus NXT Control";
-
+  
   plugin.start = function(theOptions) {
     options = theOptions
-
+    
     debug("start");
-
+    
     app.on('N2KAnalyzerOut', listener)
-  }
 
+    app.on("pipedProvidersStarted", (config) => {
+      config.pipeElements.forEach(function(element) {
+        var sendit = false
+        if ( typeof element.options != 'undefined' ) {
+          if ( typeof element.options.toChildProcess != 'undefined'
+               && element.options.toChildProcess == 'nmea2000out' )
+          {
+            sendit = true
+          }
+          else if ( element.type == 'providers/simple'
+                    && element.options.type == 'NMEA2000' ) {
+          }
+        }
+        if ( sendit ) {
+          sendStatusRequest()
+        }
+      })
+    })
+  }
+           
   var listener = (msg) => {
-    if ( msg.pgn == 65280 && pgn['Manufacturer Code'] == manufacturerCode ) {
-      const instancePath = 'electrical.switchbank.0'
+    if ( msg.pgn == pgnApiNumber && pgn['Manufacturer Code'] == manufacturerCode ) 
+      var status = readData(msg.fields['Data'])
+    
+      var values = status.dimmers.map((value, index) => {
+        return {
+          path: `${instancePath}.${status.instance}.dimmers.${index}.state`,
+          value: value / 1000.0
+        }
+      })
+
+      values = values.concat(status.switches.map((value, index) => {
+        return {
+          path: `${instancePath}.${status.instance}.switches.${index}.state`,
+          value: value ? 'on' : 'off'
+        }
+      }))
+                                      
 
       app.handleMessage(plugin.id, {
         updates: [
           {
             timestamp: (new Date()).toISOString(),
-            values: [
-              {
-                path: `${instancePath}.cabinLight.state`,
-                value: 'on'
-              },
-              {
-                path: `${instancePath}.anchorLight.state`,
-                value: 'off'
-              }]
+            values: values
           }
         ]
       })
-    }
   }
   
   plugin.stop = () => {
@@ -64,39 +104,93 @@ module.exports = function(app) {
   }
 
   plugin.registerWithRouter = (router) => {
-    router.post('/:bus/:switch/:state', (req, res) => {
-      const bus = req.params.bus
+    router.post('/:instance/:switch_or_dimmer/:switch/:state', (req, res) => {
+      const instance = req.params.instance
+      const switch_or_dimmer = req.params.switch_or_dimmer == 'switch' ? 'switches' : 'dimmers'
       const aswitch = req.params.switch
       const state = req.params.state
 
-      var data = [
-        //ManufacturerCode, Reserved, Inductry Code, Data
-        0x00,
-        0x00,
+      var current_state = _.get(app.signalk, `${instancePath}.${instance}`)
 
-        //Data
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00
-      ]
+      if ( _.isUndefined(current_state) ) {
+        res.status(501)
+        res.send('No current state')
+        return
+      }
 
-      //FIXME: need a way to know the n2k device to send to
+      //make a copy since we're going to modify it
+      current_state = JSON.parse(JSON.stringify(current_state))
+
+      current_state[switch_or_dimmer][aswitch].state.value = state
+
+      var concentrate = Concentrate2()
+      
+          // PGN 65280 Frame Data Contents according to EmpirBus Application Specific PGN
+          // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
+          // Byte 0 + Byte 1 EmpirBus manufacturer code and industry code: 0x30 0x99 = { "Manufacturer Code": "Empirbus","Industry Code":"Marine" }
+          .uint8(0x30)
+          .uint8(0x99)
+
+          // Byte 2 Instance 0..49, Unique Instance Field to distinguish / route the data
+          .uint8(instance)  // Instance of EmpirBus API component to send states to
+
+          // Byte 3 .. byte 7 user data payload according to "Data Model 2"
+          // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
+          .uint16(current_state.dimmers['0'].state.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
+          .uint16(current_state.dimmers['1'].state.value * 1000.0)     
+      
+      for ( var i = 0; i < 8; i++ ) {
+        concentrate.tinyInt(current_state.switches[i.toString()].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
+      }
+      
+      var pgn_data = concentrate.result()
+      
+      // Send out to all devices by pgnAddress = 255
       app.emit('nmea2000out',
-               toActisenseSerialFormat(65280, pgn_data, 123)) 
+               toActisenseSerialFormat(pgnApiNumber, pgn_data, pgnAddress)) 
     })
   }
 
+  function sendStatusRequest() {
+    
+    // An ISO request PGN 059904 may be done to PGN 65280 on poweron for “easy sync”. 
+    // The ISO request will result in the NXT transmitting all configured instances of PGN 65280, 
+    // allowing a 3rd party product to “sync in” when it is powered up. 
+        
+    var pgn_data = Concentrate2()
+
+        // PGN 059904 Frame Data Contents according to EmpirBus Application Specific PGN
+        // Frame Data Contents 0x00 0xFF 0x00 0xFF 0xFF 0xFF 0xFF 0xFF
+        .uint8(0x00)
+        .uint8(0xff)
+        .uint8(0x00)
+        .uint8(0xff)
+        .uint8(0xff)
+        .uint8(0xff)
+        .uint8(0xff)
+        .uint8(0xff)
+        .result()
+    
+    app.emit('nmea2000out',
+             toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255)) 
+  }
+
   plugin.schema = {
-    title: "Empire Bus",
+    title: "Empire Bus NXT",
     type: 'object',
     properties: {
+      /*
+      dataModel: {
+        title: 'Data Model',
+        type: number,
+        enum: [ 1, 2, 3, 4, 5],
+        enumNames: [ 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5']
+      }
+      */
     }
   }
   
-  return plugin;
+return plugin;
 }
 
 
@@ -117,4 +211,19 @@ function toActisenseSerialFormat(pgn, data, dst) {
       .map(x => (x.length === 1 ? "0" + x : x))
       .join(",")
   );
+}
+
+function readData(data) {
+  var buf = new Int64LE(Number(data)).toBuffer()
+
+  var instance = buf.readUInt8(2)
+      
+  var dimmers = [ buf.readUInt16(3), buf.readUInt16(4) ]
+
+  var fields = new Bitfield(buf.slice(4))
+  var switches = []
+  for ( var i = 0; i < 8; i++ ) {
+    switches.push(fields.get(i))
+  }
+  return { instance: instance, dimmers: dimmers, switches: switches }
 }

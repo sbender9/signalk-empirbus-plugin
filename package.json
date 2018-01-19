@@ -14,11 +14,17 @@
     "email": "scott@scottbender.net"
   },
   "contributors": [
-    {}
+    {
+      "name": "Christian Wegerhoff",
+      "email": "wegerhoff@mediaworx.com"
+    }
   ],
   "license": "ISC",
   "dependencies": {
-    "debug": "^2.2.0"
+    "debug": "^2.2.0",
+    "concentrate2": "^0.0.1",
+    "bitfield": "^1.1.2",
+    "int64-buffer": "^0.1.10"
   },
   "repository": {
     "type": "git",
