@@ -125,25 +125,9 @@ module.exports = function(app) {
 
       var concentrate = Concentrate2()
       
-          // FIXME: Do we need to send that? If yes how?
-          .tinyInt(manufacturerCode, 11)
-          .tinyInt(0x00) //Reserved
-          .tinyInt(4, 3) //Industry code?
-      
-          // PGN 65280 CAN Identifier
-          // ID:        Complete 29Bit Identifier = 0x1CFF00XX, where XX is SA of 3rd party device
-          // Priority:  0x07
-          // EDP:       0
-          // DP:        0
-          // PF:        0xFE
-          // PS:        0x04 (Group Extention)
-          // Source Address: [0...252] assumed to be handeled by Actisense NGT-1?
-          .uint32(0x1CFF0000,29) // FIXME: Is this a 29bit format?
-      
-          // Frame Data Contents according to EmpirBus Application Specific PGN
+          // PGN 65280 Frame Data Contents according to EmpirBus Application Specific PGN
           // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
-          // Byte 0 EmpirBus fixed value 0x30
-          // Byte 1 EmpirBus fixed value 0x99
+          // Byte 0 + Byte 1 EmpirBus manufacturer code and industry code: 0x30 0x99 = { "Manufacturer Code": "Empirbus","Industry Code":"Marine" }
           .uint8(0x30)
           .uint8(0x99)
 
@@ -175,21 +159,7 @@ module.exports = function(app) {
         
     var pgn_data = Concentrate2()
 
-        // FIXME: Do we need to send that? If yes how?
-        .tinyInt(manufacturerCode, 11)
-        .tinyInt(0x00) //Reserved
-        .tinyInt(4, 3) //Industry code?
-    
-        // PGN 059904 CAN Identifier
-        // ID:        Complete 29Bit Identifier = 0x1CEAFFXX, where XX is SA of 3rd party device
-        // Priority:  0x07
-        // EDP:       0
-        // DP:        0
-        // PF:        0xEA
-        // PS:        0xFF (Global)
-        // Source Address: [0...252] assumed to be handeled by Actisense NGT-1?
-        .uint32(0x1CEAFF00,29) // FIXME: Is this a 29bit format?
-    
+        // PGN 059904 Frame Data Contents according to EmpirBus Application Specific PGN
         // Frame Data Contents 0x00 0xFF 0x00 0xFF 0xFF 0xFF 0xFF 0xFF
         .uint8(0x00)
         .uint8(0xff)
