@@ -30,6 +30,8 @@ const Int64LE = require('int64-buffer').Int64LE
 const manufacturerCode = 304 // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
 const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
+const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmers/switches.<#>.state
+
 
 module.exports = function(app) {
   var plugin = {};
@@ -39,21 +41,19 @@ module.exports = function(app) {
 
   plugin.id = "signalk-empirbus-nxt";
   plugin.name = "EmpirBus NXT Control";
-
+  
   plugin.start = function(theOptions) {
     options = theOptions
-
+    
     debug("start");
-
+    
     app.on('N2KAnalyzerOut', listener)
   }
-
+  
   var listener = (msg) => {
-    if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) {
-      const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmers/switches.<#>.state
-
+    if ( msg.pgn == pgnNumber && pgn['Manufacturer Code'] == manufacturerCode ) 
       var status = readData(msg.fields['Data'])
-
+    
       var values = status.dimmers.map((value, index) => {
         return {
           path: `${instancePath}.${status.instance}.dimmers.${index}.state`,
@@ -66,7 +66,7 @@ module.exports = function(app) {
           path: `${instancePath}.${status.instance}.switches.${index}.state`,
           value: value ? 'on' : 'off'
         }
-      })
+      }))
                                       
 
       app.handleMessage(plugin.id, {
@@ -77,7 +77,6 @@ module.exports = function(app) {
           }
         ]
       })
-    }
   }
   
   plugin.stop = () => {
@@ -85,13 +84,26 @@ module.exports = function(app) {
   }
 
   plugin.registerWithRouter = (router) => {
-    router.post('/:bus/:switch/:state', (req, res) => {
-      const bus = req.params.bus
+    router.post('/:instance/:switch_or_dimmer/:switch/:state', (req, res) => {
+      const instance = req.params.instance
+      const switch_or_dimmer = req.params.switch_or_dimmer == 'switch' ? 'switches' : 'dimmers'
       const aswitch = req.params.switch
       const state = req.params.state
 
-      var pgn_data = Concentrate2()
-      
+      var current_state = _.get(app.signalk, `${instancePath}.${instance}`)
+
+      if ( _.isUndefined(current_state) ) {
+        res.status(501)
+        res.send('No current state')
+        return
+      }
+
+      //make a copy since we're going to modify it
+      current_state = JSON.parse(JSON.stringify(current_state))
+
+      current_state[switch_or_dimmer][aswitch].state.value = state
+
+      var concentrate = Concentrate2()
           // PGN / CAN Frame Header
           // ID:        Complete 29Bit Identifier = 0x1CFF00XX, where XX is SA of 3rd party device.
           // Priority:  0x07
@@ -108,28 +120,23 @@ module.exports = function(app) {
           // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
           // Byte 0 EmpirBus fixed value 0x30
           // Byte 1 EmpirBus fixed value 0x99
-          .byte(0x30)
-          .byte(0x99)
+          .uint8(0x30)
+          .uint8(0x99)
 
           // Byte 2 Instance 0..49, Unique Instance Field to distinguish / route the data
-          .byte(<instance>)  // FIXME: Needs to be relevant instance to address NXT component instance 
+          .uint8(instance)  // FIXME: Needs to be relevant instance to address NXT component instance 
 
           // Byte 3 .. byte 7 user data payload according to "Data Model 2"
           // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
-          .uInt16(<dimmer1.state> * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
-          .uInt16(<dimmer2.state> * 1000.0)     // FIXME: needs to be dimmer/switch states from paramters
+          .uint16(current_state.dimmers['0'].state.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
+          .uint16(current_state.dimmers['0'].state.value * 1000.0)     // FIXME: needs to be dimmer/switch states from paramters
       
-          .tinyInt(<switch1.state> == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
-          .tinyInt(<switch2.state> == "off" ? 0 : 1, 1) // FIXME: Should be a .map or loop
-          .tinyInt(<switch3.state> == "off" ? 0 : 1, 1)
-          .tinyInt(<switch4.state> == "off" ? 0 : 1, 1)
-          .tinyInt(<switch5.state> == "off" ? 0 : 1, 1)
-          .tinyInt(<switch6.state> == "off" ? 0 : 1, 1)
-          .tinyInt(<switch7.state> == "off" ? 0 : 1, 1)
-          .tinyInt(<switch8.state> == "off" ? 0 : 1, 1)
-                 
-      .result()
-
+      for ( var i = 0; i < 8; i++ ) {
+        concentrate.tinyInt(current_state.switches[i.toString()].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
+      }
+      
+      var pgn_data = concentrate.result()
+      
       // Send out to all devices with pgnAddress = 255
       app.emit('nmea2000out',
                toActisenseSerialFormat(pgnNumber, pgn_data, pgnAddress)) 
@@ -140,16 +147,18 @@ module.exports = function(app) {
     title: "Empire Bus NXT",
     type: 'object',
     properties: {
+      /*
       dataModel: {
         title: 'Data Model',
         type: number,
         enum: [ 1, 2, 3, 4, 5],
         enumNames: [ 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5']
       }
+      */
     }
   }
   
-  return plugin;
+return plugin;
 }
 
 
