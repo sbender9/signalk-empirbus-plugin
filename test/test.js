@@ -1,8 +1,9 @@
 const assert = require('assert')
+const _ = require('lodash')
 var chai = require('chai')
 chai.Should()
 chai.use(require('chai-things'))
-
+chai.use(require('chai-json-equal'));
 
 var app = {}
 var result
@@ -88,12 +89,178 @@ describe('Read pgn 65280', () => {
   })
 })
 
-function validate(delta) {
-  delta.updates[0].values[0].path.should.equal('electrical.controls.empirBusNxt:instance1:dimmer0.brightness')
-  delta.updates[0].values[0].value.should.equal(0.5)
+var expected = {
+  "electrical": {
+    "controls": {
+      "empirBusNxt:instance1:dimmer0": {
+        "state": "on",
+        "brightness": 0.5,
+        "type": "dimmer",
+        "name": "Dimmer 1.1",
+        "meta": {
+          "displayName": "Dimmer 1.1"
+        },
+        "associatedDevice": "{instance:1,dimmer:0",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:dimmer1": {
+        "state": "on",
+        "brightness": 1,
+        "type": "dimmer",
+        "name": "Dimmer 1.2",
+        "meta": {
+          "displayName": "Dimmer 1.2"
+        },
+        "associatedDevice": "{instance:1,dimmer:1",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch0": {
+        "state": "on",
+        "type": "switch",
+        "name": "Switch 1.1",
+        "meta": {
+          "displayName": "Switch 1.1"
+        },
+        "associatedDevice": "{instance:1,switch:0",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch1": {
+        "state": "off",
+        "type": "switch",
+        "name": "Switch 1.2",
+        "meta": {
+          "displayName": "Switch 1.2"
+        },
+        "associatedDevice": "{instance:1,switch:1",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch2": {
+        "state": "on",
+        "type": "switch",
+        "name": "Switch 1.3",
+        "meta": {
+          "displayName": "Switch 1.3"
+        },
+        "associatedDevice": "{instance:1,switch:2",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch3": {
+        "state": "off",
+        "type": "switch",
+        "name": "Switch 1.4",
+        "meta": {
+          "displayName": "Switch 1.4"
+        },
+        "associatedDevice": "{instance:1,switch:3",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch4": {
+        "state": "on",
+        "type": "switch",
+        "name": "Switch 1.5",
+        "meta": {
+          "displayName": "Switch 1.5"
+        },
+        "associatedDevice": "{instance:1,switch:4",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch5": {
+        "state": "off",
+        "type": "switch",
+        "name": "Switch 1.6",
+        "meta": {
+          "displayName": "Switch 1.6"
+        },
+        "associatedDevice": "{instance:1,switch:5",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch6": {
+        "state": "on",
+        "type": "switch",
+        "name": "Switch 1.7",
+        "meta": {
+          "displayName": "Switch 1.7"
+        },
+        "associatedDevice": "{instance:1,switch:6",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      },
+      "empirBusNxt:instance1:switch7": {
+        "state": "off",
+        "type": "switch",
+        "name": "Switch 1.8",
+        "meta": {
+          "displayName": "Switch 1.8"
+        },
+        "associatedDevice": "{instance:1,switch:7",
+        "source": "empirBusNxt",
+        "dataModel": 2,
+        "manufacturer": {
+          "name": "EmpirBus",
+          "model": "NXT DCU"
+        }
+      }
+    }
+  }
+}
 
-  delta.updates[0].values[1].path.should.equal('electrical.controls.empirBusNxt:instance1:dimmer1.brightness')
-  delta.updates[0].values[1].value.should.equal(1)
+function validate(delta) {
+  var flat = toFlat(delta)
+  //console.log(JSON.stringify(flat, null, 2))
+  
+  flat.should.jsonEqual(expected)
+  
+  //console.log(delta.updates[0].values[0])
+  /*
+  delta.updates[0].values[0].path.should.equal('electrical.controls.empirBusNxt:instance1:dimmer0.state')
+  delta.updates[0].values[0].value.should.equal('on')
+
+  delta.updates[0].values[1].path.should.equal('electrical.controls.empirBusNxt:instance1:dimmer0.brightness')
+  delta.updates[0].values[1].value.should.equal(0.5)
 
   var expected = 'on'
   for ( var i = 0; i < 8; i++ ) {
@@ -101,4 +268,15 @@ function validate(delta) {
     delta.updates[0].values[i+2].value.should.equal(expected)
     expected = expected === 'on' ? 'off' : 'on'
   }
+*/
+}
+
+function toFlat(delta) {
+  var res = {}
+  delta.updates.forEach(update => {
+    update.values.forEach(pathValue => {
+      _.set(res, pathValue.path, pathValue.value)
+    })
+  })
+  return res
 }
