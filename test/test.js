@@ -89,15 +89,15 @@ describe('Read pgn 65280', () => {
 })
 
 function validate(delta) {
-  delta.updates[0].values[0].path.should.equal('electrical.empirBusNxt.1.dimmers.0.state')
+  delta.updates[0].values[0].path.should.equal('electrical.controls.empirBusNxt:instance1:dimmer0.brightness')
   delta.updates[0].values[0].value.should.equal(0.5)
-  
-  delta.updates[0].values[1].path.should.equal('electrical.empirBusNxt.1.dimmers.1.state')
+
+  delta.updates[0].values[1].path.should.equal('electrical.controls.empirBusNxt:instance1:dimmer1.brightness')
   delta.updates[0].values[1].value.should.equal(1)
-  
+
   var expected = 'on'
   for ( var i = 0; i < 8; i++ ) {
-    delta.updates[0].values[i+2].path.should.equal(`electrical.empirBusNxt.1.switches.${i}.state`)
+    delta.updates[0].values[i+2].path.should.equal(`electrical.controls.empirBusNxt:instance1:switch${i}.state`)
     delta.updates[0].values[i+2].value.should.equal(expected)
     expected = expected === 'on' ? 'off' : 'on'
   }
