@@ -17,8 +17,30 @@
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
 //
-// electrical.empirBusNxt.<NXT component instance 0..49>.dimmers.<#1..2>.state
-// electrical.empirBusNxt.<NXT component instance 0..49>.switches.<#1..8>.state
+// electrical.controls.empirBusNxt:instance<NXT component instance 0..49>:switch<#0..7>.state
+// electrical.controls.empirBusNxt:instance<NXT component instance 0..49>:dimmer<#0..1>.state
+
+// electrical/controls/<ID>
+// electrical/controls/<ID>/state  (on|off)
+// electrical/controls/<ID>/brightness  (0..1)
+// electrical/controls/<ID>/type   (switch/dimmer/relais/etc.)
+// electrical/controls/<ID>/name   (System name of control. In EmpirBus devices are numbered 1..8, so device names numbered accordingly 1..8, e.g. Switch 0.8)
+//
+// electrical/controls/<ID>/meta/displayName   (Display name of control)
+//
+// electrical/controls/<ID>/associatedDevice (Address of device, e.g. {"instance":0,"switch":0} or {"instance":0,"dimmer":0})
+// electrical/controls/<ID>/source (Information what plugin needs to take care of device)
+// electrical/controls/<ID>/dataModel (Bus Data Model, e.g. from the EmpirBus programming)
+//
+// electrical/controls/<ID>/manufacturer/name
+// electrical/controls/<ID>/manufacturer/model
+//
+// <ID> is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary decive address (systemname:deviceaddress), e.g. for EmpirBus NXT devices this is empirBusNxt:instance<instance>:dimmer|switch<#>
+// <instance> is the ID of the respective EmpirBus NXT API component for 3rd party communication 0..49
+// <#> is the ID of the dimmer (0..1) or switch (0..7)
+// state is state of switch or dimmer 'on' or 'off'
+// brightness the dimming value of dimmer from 0.000 to 1.000 (decimal)
+// associatedDevice is the address of device proprietary to the plugin and digital switching system, e.g. for EmpirBus NXT {"instance":0,"switch":0} or {"instance":0,"dimmer":0}
 
 
 const debug = require("debug")("signalk-empirbusnxt")
@@ -32,7 +54,8 @@ const manufacturerCode = "Empirbus" // According to http://www.nmea.org/Assets/2
 const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
 const pgnIsoNumber = 059904 // NMEA 2000 ISO request PGN 059904 - Single Frame, Destination Address Global
 const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
-const instancePath = 'electrical.empirBusNxt' // Key path: electrical.empirBusNxt.<instance>.dimmers/switches.<#>.state
+const instancePath = 'electrical.controls' // Key path: electrical.controls.empirBusNxt:instance<NXT component instance 0..49>:switch|dimmer<#0..7>.state
+const switchingIdentifier = 'empirBusNxt'
 
 
 module.exports = function(app) {
@@ -43,12 +66,12 @@ module.exports = function(app) {
 
   plugin.id = "signalk-empirbus-nxt";
   plugin.name = "EmpirBus NXT Control";
-  
+
   plugin.start = function(theOptions) {
     options = theOptions
-    
+
     debug("start");
-    
+
     app.on('N2KAnalyzerOut', plugin.listener)
 
     app.on("pipedProvidersStarted", (config) => {
@@ -70,9 +93,9 @@ module.exports = function(app) {
       })
     })
   }
-           
+
   plugin.listener = (msg) => {
-    
+
     if ( msg.pgn == pgnApiNumber && msg.fields['Manufacturer Code'] == manufacturerCode ) {
       var status = readData(msg.fields['Data'])
       app.handleMessage(plugin.id, createDelta(status))
@@ -81,19 +104,92 @@ module.exports = function(app) {
 
   function createDelta(status) {
     var values = status.dimmers.map((value, index) => {
-        return {
-          path: `${instancePath}.${status.instance}.dimmers.${index}.state`,
-          value: value / 1000.0
-        }
+        return [
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.state`,
+            value: value ? 'on' : 'off'
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.brightness`,
+            value: value / 1000.0
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.type`,
+            value: "dimmer"
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.name`,
+            value: `Dimmer ${status.instance}.${Number(index)+1}`     // EmpirBus devices numbered 1..8
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.meta.displayName`,
+            value: `Dimmer ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.associatedDevice`,
+            value: `{instance:${status.instance},dimmer:${index}`     // FIXME: Is this resutling in {"instance":0,"dimmer":0}?
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.source`,
+            value: switchingIdentifier
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.dataModel`,
+            value: 2
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.manufacturer.name`,
+            value: "EmpirBus"
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.manufacturer.model`,
+            value: "NXT DCU"
+          }
+        ]
       })
 
+      // FIXME: Code is very redundant
       values = values.concat(status.switches.map((value, index) => {
-        return {
-          path: `${instancePath}.${status.instance}.switches.${index}.state`,
-          value: value ? 'on' : 'off'
-        }
+        return [
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.state`,
+            value: value ? 'on' : 'off'
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.type`,
+            value: "switch"
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.name`,
+            value: `Switch ${status.instance}.${Number(index)+1}`     // In EmpirBus devices are numbered 1..8
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.meta.displayName`,
+            value: `Switch ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.associatedDevice`,
+            value: `{instance:${status.instance},switch:${index}`     // FIXME: Is this resutling in {"instance":0,"switch":0}?
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.source`,
+            value: switchingIdentifier
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.dataModel`,
+            value: 2
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.name`,
+            value: "EmpirBus"
+          },
+          {
+            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.model`,
+            value: "NXT DCU"
+          }
+        ]
       }))
-                                      
+
 
     return {
       updates: [
@@ -105,19 +201,26 @@ module.exports = function(app) {
     }
   }
   plugin.createDelta = createDelta
-  
+
   plugin.stop = () => {
     app.removeListener('N2KAnalyzerOut', plugin.listener)
   }
 
   plugin.registerWithRouter = (router) => {
-    router.post('/:instance/:switch_or_dimmer/:switch/:state', (req, res) => {
-      const instance = req.params.instance
-      const switch_or_dimmer = req.params.switch_or_dimmer == 'switch' ? 'switches' : 'dimmers'
-      const aswitch = req.params.switch
-      const state = req.params.state
+    // EmpirBus handles only one value per device: state 'off' is brightness 0
+    // So API PUT needs only one parameter
+    // even though Signal K plugin stores state and brightness separately for HomeKit
 
-      var current_state = _.get(app.signalk, `${instancePath}.${instance}`)
+    router.post('/:identifier/:state', (req, res) => {
+      const identifier = req.params.identifier
+      const value = req.params.state
+
+      // Now we need to collect states of all devices of this instances
+      // Simple way: Relay on Data Model 2 to collect dimmers 0+1 and switches 0-7
+      // Potential later complex way: Parse all electrical.controls and filter for associatedDevice.instance
+
+
+      var current_state = _.get(app.signalk, `${instancePath}`)
 
       if ( _.isUndefined(current_state) ) {
         res.status(501)
@@ -128,7 +231,12 @@ module.exports = function(app) {
       //make a copy since we're going to modify it
       current_state = JSON.parse(JSON.stringify(current_state))
 
-      current_state[switch_or_dimmer][aswitch].state.value = state
+      // Set respective parameter for dimmer or switch
+      if ( identifier.indexOf('dimmer') ) {
+        current_state[`${identifier}`].brightness.value = value
+      } else {
+        current_state[`${identifier}`].state.value = value
+      }
 
       // Send out to all devices by pgnAddress = 255
       app.emit('nmea2000out', generateStatePGN(Number(instance), current_state))
@@ -137,37 +245,37 @@ module.exports = function(app) {
 
   plugin.generateStatePGN = (instance, state) => {
     var concentrate = Concentrate2()
-    // Frame Data Contents according to EmpirBus Application Specific PGN
+
+    // PGN 65280 Frame Data Contents according to EmpirBus Application Specific PGN
     // Header required by NMEA2000 Protocol to contain IdentifierTag defined by Manufacturer Code
-    // Byte 0 EmpirBus fixed value 0x30
-    // Byte 1 EmpirBus fixed value 0x99
+    // Byte 0 + Byte 1 EmpirBus manufacturer code and industry code: 0x30 0x99 = { "Manufacturer Code": "Empirbus","Industry Code":"Marine" }
         .uint8(0x30)
         .uint8(0x99)
-    
+
     // Byte 2 Instance 0..49, Unique Instance Field to distinguish / route the data
         .uint8(instance)  // Instance of EmpirBus API component to send states to
 
     // Byte 3 .. byte 7 user data payload according to "Data Model 2"
     // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
-        .uint16(state.dimmers['0'].state.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
-        .uint16(state.dimmers['1'].state.value * 1000.0)     
-    
+    .uint16(current_state[`${switchingIdentifier}:instance${status.instance}:dimmer0`].brightness.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
+    .uint16(current_state[`${switchingIdentifier}:instance${status.instance}:dimmer1`].brightness.value * 1000.0)
+
     for ( var i = 0; i < 8; i++ ) {
-      concentrate.tinyInt(state.switches[i.toString()].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
+      concentrate.tinyInt(current_state[`${switchingIdentifier}:instance${status.instance}:switch${i}`].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
     }
-    
+
     var pgn_data = concentrate.result()
-    
+
     // Send out to all devices by pgnAddress = 255
     return toActisenseSerialFormat(pgnApiNumber, pgn_data, pgnAddress)
   }
 
   function sendStatusRequest() {
-    
-    // An ISO request PGN 059904 may be done to PGN 65280 on poweron for “easy sync”. 
-    // The ISO request will result in the NXT transmitting all configured instances of PGN 65280, 
-    // allowing a 3rd party product to “sync in” when it is powered up. 
-        
+
+    // An ISO request PGN 059904 may be done to PGN 65280 on poweron for “easy sync”.
+    // The ISO request will result in the NXT transmitting all configured instances of PGN 65280,
+    // allowing a 3rd party product to “sync in” when it is powered up.
+
     var pgn_data = Concentrate2()
 
         // PGN 059904 Frame Data Contents according to EmpirBus Application Specific PGN
@@ -181,9 +289,9 @@ module.exports = function(app) {
         .uint8(0xff)
         .uint8(0xff)
         .result()
-    
+
     app.emit('nmea2000out',
-             toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255)) 
+             toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255))
   }
 
   plugin.schema = {
@@ -209,9 +317,9 @@ module.exports = function(app) {
 
   function readDataBuffer(buf) {
     var instance = buf.readUInt8(0)
-    
+
     var dimmers = [ buf.readUInt16LE(1), buf.readUInt16LE(3) ]
-    
+
     var bits = buf.readUInt8(5)
     var switches = []
     for ( var i = 0; i < 8; i++ ) {
@@ -220,8 +328,8 @@ module.exports = function(app) {
     return { instance: instance, dimmers: dimmers, switches: switches }
   }
   plugin.readDataBuffer = readDataBuffer
-  
-  
+
+
   return plugin;
 }
 
@@ -244,4 +352,3 @@ function toActisenseSerialFormat(pgn, data, dst) {
       .join(",")
   );
 }
-
