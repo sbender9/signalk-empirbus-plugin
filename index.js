@@ -103,93 +103,94 @@ module.exports = function(app) {
   }
 
   function createDelta(status) {
-    var values = status.dimmers.map((value, index) => {
-        return [
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.state`,
-            value: value ? 'on' : 'off'
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.brightness`,
-            value: value / 1000.0
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.type`,
-            value: "dimmer"
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.name`,
-            value: `Dimmer ${status.instance}.${Number(index)+1}`     // EmpirBus devices numbered 1..8
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.meta.displayName`,
-            value: `Dimmer ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.associatedDevice`,
-            value: `{instance:${status.instance},dimmer:${index}`     // FIXME: Is this resutling in {"instance":0,"dimmer":0}?
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.source`,
-            value: switchingIdentifier
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.dataModel`,
-            value: 2
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.manufacturer.name`,
-            value: "EmpirBus"
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.manufacturer.model`,
-            value: "NXT DCU"
-          }
-        ]
-      })
-
+    var values = []
+    status.dimmers.forEach((value, index) => {
+      values = values.concat([
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.state`,
+          value: value ? 'on' : 'off'
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.brightness`,
+          value: value / 1000.0
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.type`,
+          value: "dimmer"
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.name`,
+          value: `Dimmer ${status.instance}.${Number(index)+1}`     // EmpirBus devices numbered 1..8
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.meta.displayName`,
+          value: `Dimmer ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.associatedDevice`,
+          value: `{instance:${status.instance},dimmer:${index}`     // FIXME: Is this resutling in {"instance":0,"dimmer":0}?
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.source`,
+          value: switchingIdentifier
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.dataModel`,
+          value: 2
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.manufacturer.name`,
+          value: "EmpirBus"
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.manufacturer.model`,
+          value: "NXT DCU"
+        }
+      ])
+    })
+    
       // FIXME: Code is very redundant
-      values = values.concat(status.switches.map((value, index) => {
-        return [
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.state`,
-            value: value ? 'on' : 'off'
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.type`,
-            value: "switch"
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.name`,
-            value: `Switch ${status.instance}.${Number(index)+1}`     // In EmpirBus devices are numbered 1..8
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.meta.displayName`,
-            value: `Switch ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.associatedDevice`,
-            value: `{instance:${status.instance},switch:${index}`     // FIXME: Is this resutling in {"instance":0,"switch":0}?
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.source`,
-            value: switchingIdentifier
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.dataModel`,
-            value: 2
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.name`,
-            value: "EmpirBus"
-          },
-          {
-            path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.model`,
-            value: "NXT DCU"
-          }
-        ]
-      }))
-
+    status.switches.forEach((value, index) => {
+      values = values.concat([
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.state`,
+          value: value ? 'on' : 'off'
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.type`,
+          value: "switch"
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.name`,
+          value: `Switch ${status.instance}.${Number(index)+1}`     // In EmpirBus devices are numbered 1..8
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.meta.displayName`,
+          value: `Switch ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.associatedDevice`,
+          value: `{instance:${status.instance},switch:${index}`     // FIXME: Is this resutling in {"instance":0,"switch":0}?
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.source`,
+          value: switchingIdentifier
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.dataModel`,
+          value: 2
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.name`,
+          value: "EmpirBus"
+        },
+        {
+          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.model`,
+          value: "NXT DCU"
+        }
+      ])
+    })
+    
 
     return {
       updates: [
