@@ -128,7 +128,7 @@ module.exports = function(app) {
         },
         {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.associatedDevice`,
-          value: `{instance:${status.instance},dimmer:${index}`     // FIXME: Is this resutling in {"instance":0,"dimmer":0}?
+          value: `{instance:${status.instance},dimmer:${index}}`     // Technical address {"instance":0,"dimmer":0}?
         },
         {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.source`,
@@ -148,7 +148,7 @@ module.exports = function(app) {
         }
       ])
     })
-    
+
       // FIXME: Code is very redundant
     status.switches.forEach((value, index) => {
       values = values.concat([
@@ -170,7 +170,7 @@ module.exports = function(app) {
         },
         {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.associatedDevice`,
-          value: `{instance:${status.instance},switch:${index}`     // FIXME: Is this resutling in {"instance":0,"switch":0}?
+          value: `{instance:${status.instance},switch:${index}}`     // Technical address {"instance":0,"switch":0}?
         },
         {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.source`,
@@ -190,7 +190,7 @@ module.exports = function(app) {
         }
       ])
     })
-    
+
 
     return {
       updates: [
