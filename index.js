@@ -212,10 +212,7 @@ module.exports = function(app) {
     // So API PUT needs only one parameter
     // even though Signal K plugin stores state and brightness separately for HomeKit
 
-    // Route the PUT URL to full `instancePath`, as this path is known in the calling functions
-    var routePath = instancePath.replace(/\./g, '/') + '/:identifier/:state'
-
-    router.put(routePath, (req, res) => {
+    router.put('/controls/:identifier/:state', (req, res) => {
       const identifier = req.params.identifier
       const value = req.params.state
 
