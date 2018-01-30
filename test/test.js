@@ -100,7 +100,7 @@ var expected = {
         "meta": {
           "displayName": "Dimmer 1.1"
         },
-        "associatedDevice": "{instance:1,dimmer:0",
+        "associatedDevice": "{instance:1,dimmer:0}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -116,7 +116,7 @@ var expected = {
         "meta": {
           "displayName": "Dimmer 1.2"
         },
-        "associatedDevice": "{instance:1,dimmer:1",
+        "associatedDevice": "{instance:1,dimmer:1}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -131,7 +131,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.1"
         },
-        "associatedDevice": "{instance:1,switch:0",
+        "associatedDevice": "{instance:1,switch:0}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -146,7 +146,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.2"
         },
-        "associatedDevice": "{instance:1,switch:1",
+        "associatedDevice": "{instance:1,switch:1}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -161,7 +161,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.3"
         },
-        "associatedDevice": "{instance:1,switch:2",
+        "associatedDevice": "{instance:1,switch:2}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -176,7 +176,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.4"
         },
-        "associatedDevice": "{instance:1,switch:3",
+        "associatedDevice": "{instance:1,switch:3}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -191,7 +191,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.5"
         },
-        "associatedDevice": "{instance:1,switch:4",
+        "associatedDevice": "{instance:1,switch:4}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -206,7 +206,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.6"
         },
-        "associatedDevice": "{instance:1,switch:5",
+        "associatedDevice": "{instance:1,switch:5}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -221,7 +221,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.7"
         },
-        "associatedDevice": "{instance:1,switch:6",
+        "associatedDevice": "{instance:1,switch:6}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -236,7 +236,7 @@ var expected = {
         "meta": {
           "displayName": "Switch 1.8"
         },
-        "associatedDevice": "{instance:1,switch:7",
+        "associatedDevice": "{instance:1,switch:7}",
         "source": "empirBusNxt",
         "dataModel": 2,
         "manufacturer": {
@@ -251,9 +251,9 @@ var expected = {
 function validate(delta) {
   var flat = toFlat(delta)
   //console.log(JSON.stringify(flat, null, 2))
-  
+
   flat.should.jsonEqual(expected)
-  
+
   //console.log(delta.updates[0].values[0])
   /*
   delta.updates[0].values[0].path.should.equal('electrical.controls.empirBusNxt:instance1:dimmer0.state')
