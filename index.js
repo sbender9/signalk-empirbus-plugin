@@ -212,14 +212,13 @@ module.exports = function(app) {
     // So API PUT needs only one parameter
     // even though Signal K plugin stores state and brightness separately for HomeKit
 
-    router.post('/:identifier/:state', (req, res) => {
+    router.put('/:identifier/:state', (req, res) => {
       const identifier = req.params.identifier
       const value = req.params.state
 
       // Now we need to collect states of all devices of this instances
       // Simple way: Relay on Data Model 2 to collect dimmers 0+1 and switches 0-7
       // Potential later complex way: Parse all electrical.controls and filter for associatedDevice.instance
-
 
       var current_state = _.get(app.signalk, `${instancePath}`)
 
