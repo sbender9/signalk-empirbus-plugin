@@ -110,6 +110,7 @@ module.exports = function(app) {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.state`,
           value: value ? 'on' : 'off'
         },
+        // FIXME: Do not save brightness=0 if dimmer is off, so last brightness can be restored when switching back on
         {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.brightness`,
           value: value / 1000.0
