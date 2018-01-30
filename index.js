@@ -144,7 +144,7 @@ module.exports = function(app) {
         },
         {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:dimmer${index}.manufacturer.model`,
-          value: "NXT DCU"
+          value: "NXT DCM"
         }
       ])
     })
@@ -186,7 +186,7 @@ module.exports = function(app) {
         },
         {
           path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.model`,
-          value: "NXT DCU"
+          value: "NXT DCM"
         }
       ])
     })
