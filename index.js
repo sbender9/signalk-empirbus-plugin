@@ -28,7 +28,9 @@
 //
 // electrical/controls/<ID>/meta/displayName   (Display name of control)
 //
-// electrical/controls/<ID>/associatedDevice (Address of device, e.g. {"instance":0,"switch":0} or {"instance":0,"dimmer":0})
+// electrical/controls/<ID>/associatedDevice/instance (Technical device address: Instance in EmpirBus API)
+// electrical/controls/<ID>/associatedDevice/device (Technical device address: Device in instance in EmpirBus API e.g. "switch 0" or "dimmer 0")
+
 // electrical/controls/<ID>/source (Information what plugin needs to take care of device)
 // electrical/controls/<ID>/dataModel (Bus Data Model, e.g. from the EmpirBus programming)
 //
@@ -174,27 +176,27 @@ module.exports = function(app) {
           value: `Switch ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.associatedDevice.instance`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.associatedDevice.instance`,
           value: status.instance                                   // Technical address: Instance in EmpirBus API
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.associatedDevice.device`,
-          value: `dimmer ${status.instance}`                       // Technical address: Device in inst^ance of EmpirBus
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.associatedDevice.device`,
+          value: `switch ${status.instance}`                       // Technical address: Device in instance of EmpirBus
         },
         {
-          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.source`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.source`,
           value: switchingIdentifier
         },
         {
-          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.dataModel`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.dataModel`,
           value: 2
         },
         {
-          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.name`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.manufacturer.name`,
           value: "EmpirBus"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}:instance${status.instance}:switch${index}.manufacturer.model`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.manufacturer.model`,
           value: "NXT DCM"
         }
       ])

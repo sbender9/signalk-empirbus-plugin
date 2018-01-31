@@ -15,14 +15,15 @@ The dimmer values and switch states are stored in the following Rest API keys:
 
 `electrical/controls/<ID>/meta/displayName`   (Display name of control)  
 
-`electrical/controls/<ID>/associatedDevic` (Address of device, e.g. {"instance":0,"switch":0} or {"instance":0,"dimmer":0})  
+`electrical/controls/<ID>/associatedDevice/instance` (Technical device address: Instance in EmpirBus API)    
+`electrical/controls/<ID>/associatedDevice/device` (Technical device address: Device in instance in EmpirBus API e.g. "switch 0" or "dimmer 0")  
 `electrical/controls/<ID>/source` (Information what plugin needs to take care of device)  
 `electrical/controls/<ID>/dataModel` (Bus Data Model, e.g. from the EmpirBus programming)  
 
 `electrical/controls/<ID>/manufacturer/name`  
 `electrical/controls/<ID>/manufacturer/model`  
 
-`<ID>` is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary decive address (systemname:deviceaddress), e.g. for EmpirBus NXT devices this is empirBusNxt:instance<instance>:dimmer|switch<#>  
+`<ID>` is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary device address (systemname-deviceaddress), e.g. for EmpirBus NXT devices this is empirBusNxt-instance<instance>-dimmer|switch<#>  
 `<instance>` is the ID of the respective EmpirBus NXT API component for 3rd party communication 0..49  
 `<#>` is the ID of the dimmer (0..1) or switch (0..7)  
 `state` is state of switch or dimmer 'on' or 'off'  
@@ -32,15 +33,15 @@ The dimmer values and switch states are stored in the following Rest API keys:
 As Type, Display Name and Data Model are not readable from NMEA in case of EmpirBus, they need to be set manually. This could be done in a configuration file, similar to how it is done in the Homegridge Signal K Plugin. Maybe even via Signal K admin interface in "Signal K Server Plugin Configuration"?
 
       "displayNames": {  
-        "electrical.controls.empirBusNxt:instance0:device0": "Ceiling Lamp",  
-        "electrical.controls.empirBusNxt:instance0:switch0": "Engine Room Light",  
-        "electrical.controls.empirBusNxt:instance0:switch1": "Ceiling Fan",  
+        "electrical.controls.empirBusNxt-instance0-device0": "Ceiling Lamp",  
+        "electrical.controls.empirBusNxt-instance0-switch0": "Engine Room Light",  
+        "electrical.controls.empirBusNxt-instance0-switch1": "Ceiling Fan",  
       },  
 
       "controlTypes": {  
-        "electrical.controls.empirBusNxt:instance0:device0": "LightBulb",  
-        "electrical.controls.empirBusNxt:instance0:switch0": "Switch",  
-        "electrical.controls.empirBusNxt:instance0:switch1": "Fan",  
+        "electrical.controls.empirBusNxt-instance0-device0": "LightBulb",  
+        "electrical.controls.empirBusNxt-instance0-switch0": "Switch",  
+        "electrical.controls.empirBusNxt-instance0-switch1": "Fan",  
       },  
 
       "dataModel": 2
@@ -49,7 +50,7 @@ As Type, Display Name and Data Model are not readable from NMEA in case of Empir
 The devices to be ignored could also be set here, since e. g. EmpirBus always sends the complete set of elements in the data model, regardless of whether a device is connected or not.
 
       "ignoredPaths": [  
-        "electrical.controls.empirBusNxt:instance0:switch2",  
-        "electrical.controls.empirBusNxt:instance0:switch3",  
-        "electrical.controls.empirBusNxt:instance0:switch4"  
+        "electrical.controls.empirBusNxt-instance0-switch2",  
+        "electrical.controls.empirBusNxt-instance0-switch3",  
+        "electrical.controls.empirBusNxt-instance0-switch4"  
       ]  
