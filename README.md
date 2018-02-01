@@ -30,6 +30,11 @@ The dimmer values and switch states are stored in the following Rest API keys:
 `brightness` the dimming value of dimmer from 0.000 to 1.000 (decimal)  
 `associatedDevice` is the address of device proprietary to the plugin and digital switching system, e.g. for EmpirBus NXT   `{"instance":0,"switch":0}` or `{"instance":0,"dimmer":0}`
 
+
+Values to send to device are expected via PUT method at:
+`/plugins/signalk-empirbus-nxt/controls/<ID>/<state>|<brightness>`, e.g.`/plugins/signalk-empirbus-nxt/controls/empirBusNxt-instance0-dimmer0/on`
+
+
 As Type, Display Name and Data Model are not readable from NMEA in case of EmpirBus, they need to be set manually. This could be done in a configuration file, similar to how it is done in the Homegridge Signal K Plugin. Maybe even via Signal K admin interface in "Signal K Server Plugin Configuration"?
 
       "displayNames": {  

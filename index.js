@@ -44,6 +44,9 @@
 // brightness the dimming value of dimmer from 0.000 to 1.000 (decimal)
 // associatedDevice is the address of device proprietary to the plugin and digital switching system, e.g. for EmpirBus NXT {"instance":0,"switch":0} or {"instance":0,"dimmer":0}
 
+// Values to send to device are expected via PUT method at:
+// /plugins/signalk-empirbus-nxt/controls/<ID>/<state>|<brightness>, e.g. /plugins/signalk-empirbus-nxt/controls/empirBusNxt-instance0-dimmer0/on
+
 
 const debug = require("debug")("signalk-empirbusnxt")
 const path = require('path')
@@ -233,18 +236,34 @@ module.exports = function(app) {
 
       var current_state = _.get(app.signalk.self, `${instancePath}`)
 
+      // 501 No electrical controls keys at all
       if ( _.isUndefined(current_state) ) {
         res.status(501)
-        res.send('Unknown device: No current state')
+        res.send(`Unknown device: No devices found at ${instancePath}`)
+        return
+      }
+
+      // 404 No EmpirBus keys for that instance
+      if ( _.isUndefined(current_state[`${identifier}`]) ) {
+        res.status(404)
+        res.send(`Device not found: No EmpirBus NXT device for ${identifier}`)
         return
       }
 
       //make a copy since we're going to modify it
       current_state = JSON.parse(JSON.stringify(current_state))
 
-      // Set respective parameter for dimmer or switch
-      if ( identifier.indexOf('dimmer') ) {
-        current_state[`${identifier}`].brightness.value = value
+      // Set respective parameter for the adressed dimmer or switch
+      if ( current_state[`${identifier}`].type.value == 'dimmer') {
+        if (Number(value)>=0 && Number(value)<=1) {  // :state is value is brightness
+          current_state[`${identifier}`].brightness.value = value
+        } else if (value == 'on' || value == 'off') {
+          current_state[`${identifier}`].state.value = value
+        } else {
+          res.status(400)
+          res.send(`Invalid parameter: ${value} is no valid setting for device ${identifier}`)
+          return
+        }
       } else {
         current_state[`${identifier}`].state.value = value
       }
@@ -274,8 +293,6 @@ module.exports = function(app) {
     .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer1`].brightness.value * 1000.0)
 
     for ( var i = 0; i < 8; i++ ) {
-console.log(state)
-console.log(state[`${switchingIdentifier}-instance${instance}-switch${i}`])
       concentrate.tinyInt(state[`${switchingIdentifier}-instance${instance}-switch${i}`].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
     }
 
