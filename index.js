@@ -289,8 +289,10 @@ module.exports = function(app) {
 
     // Byte 3 .. byte 7 user data payload according to "Data Model 2"
     // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
-    .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer0`].brightness.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
-    .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer1`].brightness.value * 1000.0)
+    .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer0`].state.value == 'off' ?
+        0 : state[`${switchingIdentifier}-instance${instance}-dimmer0`].brightness.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
+    .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer1`].state.value == 'off' ?
+        0 : state[`${switchingIdentifier}-instance${instance}-dimmer1`].brightness.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
 
     for ( var i = 0; i < 8; i++ ) {
       concentrate.tinyInt(state[`${switchingIdentifier}-instance${instance}-switch${i}`].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
