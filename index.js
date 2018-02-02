@@ -326,6 +326,7 @@ module.exports = function(app) {
 
     app.emit('nmea2000out',
              toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255))
+    res.send(`Ok: Setting ${value} sent to device ${identifier} via NMEA`)
   }
 
   plugin.schema = {
