@@ -239,7 +239,7 @@ module.exports = function(app) {
       // 501 No electrical controls keys at all
       if ( _.isUndefined(current_state) ) {
         res.status(501)
-        res.send(`Unknown device: No devices found at ${instancePath}`)
+        res.send(`EmpirBus NXT not connected: No devices found at ${instancePath}`)
         return
       }
 
@@ -260,7 +260,7 @@ module.exports = function(app) {
         } else if (value == 'on' || value == 'off') {
           current_state[`${identifier}`].state.value = value
         } else {
-          res.status(400)
+          res.status(400) // 400 No valid parameter for EmpirBus device
           res.send(`Invalid parameter: ${value} is no valid setting for device ${identifier}`)
           return
         }
@@ -270,6 +270,7 @@ module.exports = function(app) {
 
       // Send out to all devices by pgnAddress = 255
       app.emit('nmea2000out', plugin.generateStatePGN(Number(current_state[`${identifier}`].associatedDevice.instance.value), current_state))
+      res.send(`Ok: Setting ${value} sent to device ${identifier} via NMEA`)
 
       // Signal K keys are not updated here, as EmpirBus implemenation needs to answer with new device state PNG for keys update
     })
@@ -326,7 +327,7 @@ module.exports = function(app) {
 
     app.emit('nmea2000out',
              toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255))
-    res.send(`Ok: Setting ${value} sent to device ${identifier} via NMEA`)
+    console.log('ISO request PGN 059904 sent on poweron for easy sync')
   }
 
   plugin.schema = {
