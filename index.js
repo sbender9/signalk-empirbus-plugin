@@ -115,11 +115,6 @@ module.exports = function(app) {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.state`,
           value: value ? 'on' : 'off'
         },
-        // FIXME: Do not save brightness=0 if dimmer is off, so last brightness can be restored when switching back on
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.brightness`,
-          value: value / 1000.0
-        },
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.type`,
           value: "dimmer"
@@ -157,6 +152,12 @@ module.exports = function(app) {
           value: "NXT DCM"
         }
       ])
+      if  (Number(value)>0 ) { // Do not save brightness=0 if dimmer is off, so last brightness can be restored when switching back on
+        values.push({
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.brightness`,
+          value: value / 1000.0
+        })
+      }
     })
 
       // FIXME: Code is very redundant
