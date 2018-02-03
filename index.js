@@ -94,6 +94,10 @@ module.exports = function(app) {
         }
         if ( sendit ) {
           sendStatusRequest()
+          console.log('ISO request PGN 059904 sent on poweron for easy sync')
+
+        } else {
+          console.log('No NMEA provider found')
         }
       })
     })
@@ -328,7 +332,6 @@ module.exports = function(app) {
 
     app.emit('nmea2000out',
              toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255))
-    console.log('ISO request PGN 059904 sent on poweron for easy sync')
   }
 
   plugin.schema = {
