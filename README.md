@@ -35,6 +35,7 @@ Values to send to device are expected via PUT method at:
 `/plugins/signalk-empirbus-nxt/controls/<ID>/<state>|<brightness>`, e.g.`/plugins/signalk-empirbus-nxt/controls/empirBusNxt-instance0-dimmer0/on`
 
 
+## To Do
 As Type, Display Name and Data Model are not readable from NMEA in case of EmpirBus, they need to be set manually. This could be done in a configuration file, similar to how it is done in the Homegridge Signal K Plugin. Maybe even via Signal K admin interface in "Signal K Server Plugin Configuration"?
 
       "displayNames": {  
