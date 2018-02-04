@@ -54,6 +54,7 @@ const Concentrate2 = require("concentrate2");
 const Bitfield = require("bitfield")
 const Int64LE = require('int64-buffer').Int64LE
 const _ = require('lodash')
+const util = require('util')
 
 const manufacturerCode = "Empirbus" // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
@@ -73,9 +74,9 @@ module.exports = function(app) {
   plugin.name = "EmpirBus NXT Control";
 
   plugin.start = function(theOptions) {
-    options = theOptions
+    debug("Starting: %s", util.inspect(theOptions, {showHidden: false, depth: null}) );
 
-    debug("start");
+    options = theOptions
 
     app.on('N2KAnalyzerOut', plugin.listener)
 
@@ -161,7 +162,7 @@ module.exports = function(app) {
       }
     })
 
-      // FIXME: Code is very redundant
+    // FIXME: Code is very redundant
     status.switches.forEach((value, index) => {
       values = values.concat([
         {
@@ -186,7 +187,7 @@ module.exports = function(app) {
         },
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.associatedDevice.device`,
-          value: `switch ${status.instance}`                       // Technical address: Device in instance of EmpirBus
+          value: `switch ${index}`                       // Technical address: Device in instance of EmpirBus
         },
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.source`,
@@ -331,20 +332,115 @@ module.exports = function(app) {
              toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255))
   }
 
-  plugin.schema = {
-    title: "Empire Bus NXT",
-    type: 'object',
-    properties: {
-      /*
-      dataModel: {
-        title: 'Data Model',
-        type: number,
-        enum: [ 1, 2, 3, 4, 5],
-        enumNames: [ 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5']
+  plugin.schema = function() {
+
+    var controls = _.get(app.signalk.self, `${instancePath}`)
+
+    // Error Message if no electrical controls keys at all
+    if ( _.isUndefined(controls) ) {
+      dynamicSchema = {
+        "description": `EmpirBus NXT not connected: No devices found at ${instancePath}`,
+        "type": "object",
+        "properties": {
+        }
       }
-      */
+      return dynamicSchema;
     }
+
+    var devices = []
+    _.keys(controls).forEach(device => {
+      if ((device.slice(0,switchingIdentifier.length)) == switchingIdentifier ) {
+        devices = devices.concat(controls[device].name.value)
+          //     identifier: device,
+          //     type: controls[device].type.value,
+          //     name: controls[device].name.value,
+          //     displayName: controls[device].meta.displayName.value,
+          //     instance : controls[device].associatedDevice.instance.value,
+          //     device : controls[device].associatedDevice.device.value
+      }
+    })
+
+    dynamicSchema = {
+      "description": `EmpirBus NXT devices found at ${instancePath}`,
+      "type": "object",
+      "properties": {
+        "activeDevicesList": {
+          "type": "array",
+          "title": "Deactivate blind devices in list",
+          "items": {
+            "type": "string",
+            "enum": devices
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+
+    return dynamicSchema;
   }
+
+  plugin.uiSchema = {
+    "activeDevicesList": {
+       "ui:widget": "checkboxes"
+     },
+  }
+
+  // /*
+  //   dataModel: {
+  //   title: 'Data Model',
+  //   type: 'number',
+  //   enum: [ 1, 2, 3, 4, 5],
+  //   enumNames: [ 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5']
+  // */
+
+  // plugin.schema = {
+  //   "title": "Empire Bus NXT",
+  //   "type": "object",
+  //   "properties": {
+  //     "devices": {
+  //       "type": "array",
+  //       "title": "Devices",
+  //       "items": {
+  //         "type": "object",
+  //         "properties": {
+  //           "enabled": {
+  //             "title": "Enabled",
+  //             "type": "boolean"
+  //           },
+  //           "deviceType": {
+  //             "title": "Device Type",
+  //             "type": "string"
+  //           },
+  //           "displayName": {
+  //             "title": "Display Name",
+  //             "type": "string"
+  //           }
+  //         }
+  //       }
+  //     },
+  //     "ignoredDevices" : {
+  //       "type": "object",
+  //       "title": "Ignored Devices",
+  //       "properties": {
+  //         "ignoredDevicesList": {
+  //           "type": "string",
+  //           "title": "Enter devices to ignore one per line:"
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  //
+  // plugin.uiSchema = {
+  //   "ignoredDevices": {
+  //     "ignoredDevicesList": {
+  //       "ui:widget": "textarea",
+  //       "ui:options": {
+  //         "rows": 7
+  //       }
+  //     }
+  //   }
+  // }
 
   function readData(data) {
     var buf = new Int64LE(Number(data)).toBuffer()
