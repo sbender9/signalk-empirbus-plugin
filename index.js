@@ -54,7 +54,6 @@ const Concentrate2 = require("concentrate2");
 const Bitfield = require("bitfield")
 const Int64LE = require('int64-buffer').Int64LE
 const _ = require('lodash')
-const util = require('util')
 
 const manufacturerCode = "Empirbus" // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
