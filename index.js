@@ -139,9 +139,6 @@ module.exports = function(app) {
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.associatedDevice.device`,
           value: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
-=======
-          value: `dimmer ${status.instance}`              // Technical address: Device in instance of EmpirBus
->>>>>>> 695e1ae2aac3187a635ec19c83700c02c8ae5981
         },
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.source`,
@@ -183,9 +180,6 @@ module.exports = function(app) {
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.name`,
           value: `Switch ${status.instance}.${empirbusIndex}`
-=======
-          value: `Switch ${status.instance}.${index}`
->>>>>>> 695e1ae2aac3187a635ec19c83700c02c8ae5981
         },
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.displayName`,
@@ -198,13 +192,6 @@ module.exports = function(app) {
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.associatedDevice.device`,
           value: `switch ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
-=======
-          value: status.instance                          // Technical address: Instance in EmpirBus API
-        },
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.associatedDevice.device`,
-          value: `switch ${empirbusIndex}`                        // Technical address: Device in instance of EmpirBus
->>>>>>> 695e1ae2aac3187a635ec19c83700c02c8ae5981
         },
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.source`,
