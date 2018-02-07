@@ -17,19 +17,21 @@
 // Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
 // 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
 //
-// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-switch<#0..7>.state
-// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#0..1>.state
+// EmpirBus devices are numbered 1..8. To avoid confusion Signal K device names numbered accordingly starting from 1, not from 0
+//
+// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#1..2>.state
+// electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-switch<#1..8>.state
 
 // electrical/controls/<ID>
 // electrical/controls/<ID>/state  (on|off)
 // electrical/controls/<ID>/brightness  (0..1)
-// electrical/controls/<ID>/type   (switch/dimmer/relais/etc.)
-// electrical/controls/<ID>/name   (System name of control. In EmpirBus devices are numbered 1..8, so device names numbered accordingly 1..8, e.g. Switch 0.8)
+// electrical/controls/<ID>/type   (switch | dimmer | relais | etc.)
+// electrical/controls/<ID>/name   (System name of control, e.g. Switch 0.8)
 //
 // electrical/controls/<ID>/meta/displayName   (Display name of control)
 //
 // electrical/controls/<ID>/associatedDevice/instance (Technical device address: Instance in EmpirBus API)
-// electrical/controls/<ID>/associatedDevice/device (Technical device address: Device in instance in EmpirBus API e.g. "switch 0" or "dimmer 0")
+// electrical/controls/<ID>/associatedDevice/device (Technical device address: Device in instance in EmpirBus API e.g. "switch 1" or "dimmer 1")
 
 // electrical/controls/<ID>/source (Information what plugin needs to take care of device)
 // electrical/controls/<ID>/dataModel (Bus Data Model, e.g. from the EmpirBus programming)
@@ -39,10 +41,10 @@
 //
 // <ID> is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary decive address (systemname-deviceaddress), e.g. for EmpirBus NXT devices this is empirBusNxt-instance<instance>-dimmer|switch<#>
 // <instance> is the ID of the respective EmpirBus NXT API component for 3rd party communication 0..49
-// <#> is the ID of the dimmer (0..1) or switch (0..7)
+// <#> is the ID of the dimmer (1..2) or switch (1..8)
 // state is state of switch or dimmer 'on' or 'off'
 // brightness the dimming value of dimmer from 0.000 to 1.000 (decimal)
-// associatedDevice is the address of device proprietary to the plugin and digital switching system, e.g. for EmpirBus NXT {"instance":0,"switch":0} or {"instance":0,"dimmer":0}
+// associatedDevice is the address of device proprietary to the plugin and digital switching system, e.g. for EmpirBus NXT {"instance":0,"switch":1} or {"instance":0,"dimmer":1}
 
 // Values to send to device are expected via PUT method at:
 // /plugins/signalk-empirbus-nxt/controls/<ID>/<state>|<brightness>, e.g. /plugins/signalk-empirbus-nxt/controls/empirBusNxt-instance0-dimmer0/on
@@ -59,7 +61,7 @@ const manufacturerCode = "Empirbus" // According to http://www.nmea.org/Assets/2
 const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
 const pgnIsoNumber = 059904 // NMEA 2000 ISO request PGN 059904 - Single Frame, Destination Address Global
 const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
-const instancePath = 'electrical.controls' // Key path: electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-switch|dimmer<#0..7>.state
+const instancePath = 'electrical.controls' // Key path: electrical.controls.empirBusNxt-instance<NXT component instance 0..49>-switch|dimmer<#1..8>.state
 const switchingIdentifier = 'empirBusNxt'
 
 
@@ -73,7 +75,7 @@ module.exports = function(app) {
   plugin.name = "EmpirBus NXT Control";
 
   plugin.start = function(theOptions) {
-    debug("Starting: %s", util.inspect(theOptions, {showHidden: false, depth: null}) );
+    debug("Starting: EmpirBus NXT Control");
 
     options = theOptions
 
@@ -109,53 +111,55 @@ module.exports = function(app) {
   }
 
   function createDelta(status) {
+    var empirbusIndex = 0  // EmpirBus devices are numbered 1..8, satrting with 1
     var values = []
     status.dimmers.forEach((value, index) => {
+      empirbusIndex = index +1
       values = values.concat([
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.state`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.state`,
           value: value ? 'on' : 'off'
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.type`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.type`,
           value: "dimmer"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.name`,
-          value: `Dimmer ${status.instance}.${Number(index)+1}`     // EmpirBus devices numbered 1..8
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.name`,
+          value: `Dimmer ${status.instance}.${empirbusIndex}`
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.meta.displayName`,
-          value: `Dimmer ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.displayName`,
+          value: `Dimmer ${status.instance}.${empirbusIndex}`     // FIXME: Should be read from defaults.json
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.associatedDevice.instance`,
-          value: status.instance                                   // Technical address: Instance in EmpirBus API
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.associatedDevice.instance`,
+          value: status.instance                         // Technical address: Instance in EmpirBus API
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.associatedDevice.device`,
-          value: `dimmer ${status.instance}`                       // Technical address: Device in instance of EmpirBus
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.associatedDevice.device`,
+          value: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.source`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.source`,
           value: switchingIdentifier
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.dataModel`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dataModel`,
           value: 2
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.manufacturer.name`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.manufacturer.name`,
           value: "EmpirBus"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.manufacturer.model`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.manufacturer.model`,
           value: "NXT DCM"
         }
       ])
       if  (Number(value)>0 ) { // Do not save brightness=0 if dimmer is off, so last brightness can be restored when switching back on
         values.push({
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${index}.brightness`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.brightness`,
           value: value / 1000.0
         })
       }
@@ -163,45 +167,46 @@ module.exports = function(app) {
 
     // FIXME: Code is very redundant
     status.switches.forEach((value, index) => {
+      empirbusIndex = index +1
       values = values.concat([
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.state`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.state`,
           value: value ? 'on' : 'off'
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.type`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.type`,
           value: "switch"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.name`,
-          value: `Switch ${status.instance}.${Number(index)+1}`     // In EmpirBus devices are numbered 1..8
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.name`,
+          value: `Switch ${status.instance}.${empirbusIndex}`
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.meta.displayName`,
-          value: `Switch ${status.instance}.${Number(index)+1}`     // FIXME: Should be read from defaults.json
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.displayName`,
+          value: `Switch ${status.instance}.${empirbusIndex}`     // FIXME: Should be read from defaults.json
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.associatedDevice.instance`,
-          value: status.instance                                   // Technical address: Instance in EmpirBus API
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.associatedDevice.instance`,
+          value: status.instance                         // Technical address: Instance in EmpirBus API
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.associatedDevice.device`,
-          value: `switch ${index}`                       // Technical address: Device in instance of EmpirBus
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.associatedDevice.device`,
+          value: `switch ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.source`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.source`,
           value: switchingIdentifier
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.dataModel`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.dataModel`,
           value: 2
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.manufacturer.name`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.manufacturer.name`,
           value: "EmpirBus"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${index}.manufacturer.model`,
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.manufacturer.model`,
           value: "NXT DCM"
         }
       ])
@@ -292,12 +297,12 @@ module.exports = function(app) {
 
     // Byte 3 .. byte 7 user data payload according to "Data Model 2"
     // 2x Dimmer states as uword/uint(16) + 8x Switch states as 1 Bit
-    .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer0`].state.value == 'off' ?
-        0 : state[`${switchingIdentifier}-instance${instance}-dimmer0`].brightness.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
     .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer1`].state.value == 'off' ?
         0 : state[`${switchingIdentifier}-instance${instance}-dimmer1`].brightness.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
+    .uint16(state[`${switchingIdentifier}-instance${instance}-dimmer2`].state.value == 'off' ?
+        0 : state[`${switchingIdentifier}-instance${instance}-dimmer2`].brightness.value * 1000.0)     // Dimmer state converted back to EmpirBus format 0...1000
 
-    for ( var i = 0; i < 8; i++ ) {
+    for ( var i = 1; i < 9; i++ ) {
       concentrate.tinyInt(state[`${switchingIdentifier}-instance${instance}-switch${i}`].state.value == "off" ? 0 : 1, 1) // Switch state converted back to EmpirBus format 0/1
     }
 
