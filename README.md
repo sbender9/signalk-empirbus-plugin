@@ -36,7 +36,7 @@ Values to send to device are expected via PUT method at:
 
 
 ## To Do
-As Type, Display Name and Data Model are not readable from NMEA in case of EmpirBus, they need to be set manually. This could be done in a configuration file, similar to how it is done in the Homegridge Signal K Plugin. Maybe even via Signal K admin interface in "Signal K Server Plugin Configuration"?
+As Type, Display Name and Data Model are not readable from NMEA in case of EmpirBus, they need to be set manually. This could be done in a configuration file, similar to how it is done in the Homebridge Signal K Plugin. Maybe even via Signal K admin interface in "Signal K Server Plugin Configuration"?
 
       "displayNames": {  
         "electrical.controls.empirBusNxt-instance0-device0": "Ceiling Lamp",  
