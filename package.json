@@ -4,7 +4,7 @@
   "description": "EmpirBus NXT Control",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --exit"
   },
   "keywords": [
     "signalk-node-server-plugin"
@@ -19,9 +19,6 @@
       "email": "wegerhoff@mediaworx.com"
     }
   ],
-  "scripts": {
-    "test": "mocha --exit"
-  },
   "license": "ISC",
   "dependencies": {
     "debug": "^2.2.0",
@@ -31,9 +28,10 @@
     "lodash": "^4.17.4"
   },
   "devDependencies": {
-    "mocha": "^4.0.0",
     "chai": "~4.1.0",
-    "chai-things": "0.2"
+    "chai-json-equal": "0.0.1",
+    "chai-things": "0.2",
+    "mocha": "^4.0.0"
   },
   "repository": {
     "type": "git",

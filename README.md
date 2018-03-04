@@ -3,9 +3,9 @@ Monitor and control an EmpirBus NXT via EmpirBus Application Specific PGN 65280 
 
 This plugin relies on the "Data Model 2" to read and write the status of 2x dimmers with EmpirBus values 0..1000 and 8x switches 0|1 per instance of an EmpirBus Application Specific PGN component. The values of the two dimmers are expected in the 2x uword values of Data Model 2, while the status of the eight switches is expected in the 8x bit values. Find in the docs folder the EmpirBus NXT documentation for details on how to process data model in EmpirBus NXT programming.
 
-The EmpirBus implementation has to use these instances in the EmpirBus Application Specific PGN component:
-“Receive from network”: X (e.g. 0, 2, 4, 6, ...)
-“Transmit to network”: X + 1 (e.g. 1, 3, 5, 7, ...)
+The EmpirBus implementation has to use these instances in the EmpirBus Application Specific PGN component:  
+“Receive from network”: X (e.g. 0, 2, 4, 6, ...)  
+“Transmit to network”: X + 1 (e.g. 1, 3, 5, 7, ...)  
 
 In EmpirBus devices are numbered 1..8. To avoid confusion Signal K device names are numbered accordingly starting from 1, not from 0.
 

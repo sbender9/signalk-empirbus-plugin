@@ -29,219 +29,221 @@ describe('Read pgn 65280', () => {
   }),
   it('to actisense', () => {
     const state = {
-      dimmers: {
-        "1": {
-          "state": {
-            "value": 0.5
-          }
+      "empirBusNxt-instance0-dimmer1": {
+        "state": {
+          "value": true
         },
-        "2": {
-          "state": {
-            "value": 1
-          }
+        "dimmingLevel": {
+          "value": 0.5
         }
       },
-      switches: {
-        "1": {
-          "state": {
-            "value": "on"
-          }
+      "empirBusNxt-instance0-dimmer2": {
+        "state": {
+          "value": true
         },
-        "2": {
-          "state": {
-            "value": "off"
-          }
-        },
-        "3": {
-          "state": {
-            "value": "on"
-          }
-        },
-        "4": {
-          "state": {
-            "value": "off"
-          }
-        },
-        "5": {
-          "state": {
-            "value": "on"
-          }
-        },
-        "6": {
-          "state": {
-            "value": "off"
-          }
-        },
-        "7": {
-          "state": {
-            "value": "on"
-          }
-        },
-        "8": {
-          "state": {
-            "value": "off"
-          }
-        },
+        "dimmingLevel": {
+          "value": 1
+        }
+      },
+      "empirBusNxt-instance0-switch1": {
+        "state": {
+          "value": true
+        }
+      },
+      "empirBusNxt-instance0-switch2": {
+        "state": {
+          "value": false
+        }
+      },
+      "empirBusNxt-instance0-switch3": {
+        "state": {
+          "value": true
+        }
+      },
+      "empirBusNxt-instance0-switch4": {
+        "state": {
+          "value": false
+        }
+      },
+      "empirBusNxt-instance0-switch5": {
+        "state": {
+          "value": true
+        }
+      },
+      "empirBusNxt-instance0-switch6": {
+        "state": {
+          "value": false
+        }
+      },
+      "empirBusNxt-instance0-switch7": {
+        "state": {
+          "value": true
+        }
+      },
+      "empirBusNxt-instance0-switch8": {
+        "state": {
+          "value": false
+        }
       }
     }
-    var actisense = plugin.generateStatePGN(1, state)
-    actisense.substr(25).should.equal('2,65280,0,255,8,30,99,01,f4,01,e8,03,55')
+    var actisense = plugin.generateStatePGN(0, state)
+    actisense.substr(25).should.equal('2,65280,0,255,8,30,99,00,f4,01,e8,03,55')
   })
 })
 
 var expected = {
   "electrical": {
-    "controls": {
-      "empirBusNxt-instance1-dimmer1": {
-        "state": "on",
-        "brightness": 0.5,
+    "switches": {
+      "empirBusNxt-instance0-dimmer1": {
+        "state": true,
+        "dimmingLevel": 0.5,
         "type": "dimmer",
-        "name": "Dimmer 1.1",
+        "name": "Dimmer 0.1",
         "meta": {
-          "displayName": "Dimmer 1.1"
-        },
-        "associatedDevice": {"instance":1,"dimmer":1},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Dimmer 0.1",
+          "associatedDevice": {"instance":0,"device":"dimmer 1"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-dimmer2": {
-        "state": "on",
-        "brightness": 1,
+      "empirBusNxt-instance0-dimmer2": {
+        "state": true,
+        "dimmingLevel": 1,
         "type": "dimmer",
-        "name": "Dimmer 1.2",
+        "name": "Dimmer 0.2",
         "meta": {
-          "displayName": "Dimmer 1.2"
-        },
-        "associatedDevice": {"instance":1,"dimmer":2},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Dimmer 0.2",
+          "associatedDevice": {"instance":0,"device":"dimmer 2"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch1": {
-        "state": "on",
+      "empirBusNxt-instance0-switch1": {
+        "state": true,
         "type": "switch",
-        "name": "Switch 1.1",
+        "name": "Switch 0.1",
         "meta": {
-          "displayName": "Switch 1.1"
-        },
-        "associatedDevice": {"instance":1,"switch":1},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.1",
+          "associatedDevice": {"instance":0,"device":"switch 1"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch2": {
-        "state": "off",
+      "empirBusNxt-instance0-switch2": {
+        "state": false,
         "type": "switch",
-        "name": "Switch 1.2",
+        "name": "Switch 0.2",
         "meta": {
-          "displayName": "Switch 1.2"
-        },
-        "associatedDevice": {"instance":1,"switch":2},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.2",
+          "associatedDevice": {"instance":0,"device":"switch 2"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch3": {
-        "state": "on",
+      "empirBusNxt-instance0-switch3": {
+        "state": true,
         "type": "switch",
-        "name": "Switch 1.3",
+        "name": "Switch 0.3",
         "meta": {
-          "displayName": "Switch 1.3"
-        },
-        "associatedDevice": {"instance":1,"switch":3},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.3",
+          "associatedDevice": {"instance":0,"device":"switch 3"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch4": {
-        "state": "off",
+      "empirBusNxt-instance0-switch4": {
+        "state": false,
         "type": "switch",
-        "name": "Switch 1.4",
+        "name": "Switch 0.4",
         "meta": {
-          "displayName": "Switch 1.4"
-        },
-        "associatedDevice": {"instance":1,"switch":4},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.4",
+          "associatedDevice": {"instance":0,"device":"switch 4"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch5": {
-        "state": "on",
+      "empirBusNxt-instance0-switch5": {
+        "state": true,
         "type": "switch",
-        "name": "Switch 1.5",
+        "name": "Switch 0.5",
         "meta": {
-          "displayName": "Switch 1.5"
-        },
-        "associatedDevice": {"instance":1,"switch":5},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.5",
+          "associatedDevice": {"instance":0,"device":"switch 5"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch6": {
-        "state": "off",
+      "empirBusNxt-instance0-switch6": {
+        "state": false,
         "type": "switch",
-        "name": "Switch 1.6",
+        "name": "Switch 0.6",
         "meta": {
-          "displayName": "Switch 1.6"
-        },
-        "associatedDevice": "{instance:1,switch:6}",
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.6",
+          "associatedDevice": {"instance":0,"device":"switch 6"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch7": {
-        "state": "on",
+      "empirBusNxt-instance0-switch7": {
+        "state": true,
         "type": "switch",
-        "name": "Switch 1.7",
+        "name": "Switch 0.7",
         "meta": {
-          "displayName": "Switch 1.7"
-        },
-        "associatedDevice": {"instance":1,"switch":7},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.7",
+          "associatedDevice": {"instance":0,"device":"switch 7"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       },
-      "empirBusNxt-instance1-switch8": {
-        "state": "off",
+      "empirBusNxt-instance0-switch8": {
+        "state": false,
         "type": "switch",
-        "name": "Switch 1.8",
+        "name": "Switch 0.8",
         "meta": {
-          "displayName": "Switch 1.8"
-        },
-        "associatedDevice": {"instance":1,"switch":8},
-        "source": "empirBusNxt",
-        "dataModel": 2,
-        "manufacturer": {
-          "name": "EmpirBus",
-          "model": "NXT DCM"
+          "displayName": "Switch 0.8",
+          "associatedDevice": {"instance":0,"device":"switch 8"},
+          "source": "empirBusNxt",
+          "dataModel": 2,
+          "manufacturer": {
+            "name": "EmpirBus",
+            "model": "NXT DCM"
+          }
         }
       }
     }

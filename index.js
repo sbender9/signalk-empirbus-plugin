@@ -270,7 +270,7 @@ module.exports = function(app) {
       // Set respective parameter for the adressed dimmer or switch
       if (Number(value)>=0 && Number(value)<=1 && current_state[`${identifier}`].type.value == 'dimmer') {  // :state is value of dimmingLevel
         current_state[`${identifier}`].dimmingLevel.value = value
-      } else if (value == 'true' || || value == 'on' || value == 'false' || value == 'off') {
+      } else if (value == 'true' || value == 'on' || value == 'false' || value == 'off') {
         current_state[`${identifier}`].state.value = (value == 'true' || value == 'on') ? true : false;
       } else {
         res.status(400) // 400 No valid parameter for EmpirBus device
