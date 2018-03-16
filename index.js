@@ -127,7 +127,7 @@ module.exports = function(app) {
     status.instance--;    // "Receive from network" instance = "Transmit to network" instance + 1
 
     status.dimmers.forEach((value, index) => {
-      var empirbusIndex = index +1
+      var empirbusIndex = index +1   // EmpirBus devices are numbered 1..8, starting with 1
       var dimmerValues = [
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.state`,
@@ -314,7 +314,7 @@ module.exports = function(app) {
 
     return { state: 'COMPLETED' }
 
-    // Signal K keys are not updated here. EmpirBus implemenation needs to answer with new device state PNG for keys update
+    // Signal K keys are not updated here. EmpirBus implementation needs to answer with new device state PNG for keys update
   }
 
   plugin.generateStatePGN = (instance, state) => {
