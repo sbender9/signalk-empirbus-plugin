@@ -145,47 +145,38 @@ module.exports = function(app) {
           value: `Dimmer ${status.instance}.${empirbusIndex}`
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.associatedDevice.instance`,
-          value: status.instance                         // Technical address: Instance in EmpirBus API
-        },
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.associatedDevice.device`,
-          value: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
-        },
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.source`,
-          value: switchingIdentifier
-        },
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.dataModel`,
-          value: 2
-        },
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.manufacturer.name`,
-          value: "EmpirBus"
-        },
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.manufacturer.model`,
-          value: "NXT DCM"
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}`,
+          value: {
+            meta: {
+              associatedDevice: {
+                instance: status.instance,
+                device: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
+              },
+              source: switchingIdentifier,
+              dataModel: 2,
+              manufacturer: {
+                name: "EmpirBus",
+                model: "NXT DCM"
+              }
+            }
+          }
         }
       ]
       if ( !registeredForPut && app.registerActionHandler ) {
         onStop.push(app.registerActionHandler('vessels.self',
                                               dimmerValues[0].path,
-                                              {
+                                              getActionHandler({
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
                                                 type: 'dimmerState'
-                                              },
-                                              actionHandler))
+                                              })))
         onStop.push(app.registerActionHandler('vessels.self',
                                               `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dimmingLevel`,
-                                              {
+                                              getActionHandler({
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
                                                 type: 'dimmerLevel'
-                                              },
-                                              actionHandler))
+                                              })))
       }
       if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
         values.push({
@@ -242,12 +233,11 @@ module.exports = function(app) {
       if ( !registeredForPut && app.registerActionHandler ) {
         onStop.push(app.registerActionHandler('vessels.self',
                                               switchValues[0].path,
-                                              {
+                                              getActionHandler({
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
                                                 type: 'switch'
-                                              },
-                                              actionHandler))
+                                              })))
       }
       values = values.concat(switchValues)
     })
@@ -270,6 +260,12 @@ module.exports = function(app) {
     onStop.forEach(f => f())
   }
 
+  function getActionHandler(data) {
+    return (context, path, value, cb) => {
+      return actionHandler(context, path, value, data, cb)
+    }
+  }
+
   function actionHandler(context, path, value, data, cb) {
     // Now we need to collect states of all devices of this instances
     // Simple way: Relay on Data Model 2 to collect dimmers 0+1 and switches 0-7
@@ -283,7 +279,7 @@ module.exports = function(app) {
 
     if ( data.type === 'switch' || data.type === 'dimmerState' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
-        return { state: 'COMPLETED', code:400, message: `Invalid switch value ${value}` }
+        return { state: 'COMPLETED', resultStatus:400, message: `Invalid switch value ${value}` }
       }
     }
     
@@ -293,7 +289,7 @@ module.exports = function(app) {
       if ( value >= 0 && value <= 1 ) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
       } else {
-        return { state: 'COMPLETED', code:400, message: `Invalid dimmer level ${value}` }
+        return { state: 'COMPLETED', resultStatus:400, message: `Invalid dimmer level ${value}` }
       }
     } else {
       currentState.dimmers[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? currentState.lastDimmingLevels[data.empirbusIndex-1]  : 0
