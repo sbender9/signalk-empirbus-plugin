@@ -50,11 +50,10 @@
 // dimmingLevel is the dimming value of dimmer from 0.000 to 1.000 (decimal)
 // associatedDevice is the address of device proprietary to the plugin and digital switching system, e.g. for EmpirBus NXT {"instance":0,"switch":1} or {"instance":0,"dimmer":1}
 
-// Values to send to device are expected via PUT method at: electrical/switches/<identifier>
-// e.g. electrical/switches/empirBusNxt-instance0-dimmer0/
+// Values to send to device are expected via PUT method at: electrical/switches/<identifier>/<state>|<dimmerLevel>
+// e.g. electrical/switches/empirBusNxt-instance0-dimmer0/dimmerLevel
 // {
-//  "value" = true,
-//  "source": "actisense.204",
+//  "value" = 0.75
 // }
 
 
