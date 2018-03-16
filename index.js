@@ -146,10 +146,6 @@ module.exports = function(app) {
           value: `Dimmer ${status.instance}.${empirbusIndex}`
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.displayName`,
-          value: `Dimmer ${status.instance}.${empirbusIndex}`     // FIXME: Should be read from defaults.json
-        },
-        {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.meta.associatedDevice.instance`,
           value: status.instance                         // Technical address: Instance in EmpirBus API
         },
@@ -177,7 +173,6 @@ module.exports = function(app) {
       if ( !registeredForPut && app.registerActionHandler ) {
         onStop.push(app.registerActionHandler('vessels.self',
                                               dimmerValues[0].path,
-                                              plugin.id,
                                               {
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
@@ -186,7 +181,6 @@ module.exports = function(app) {
                                               actionHandler))
         onStop.push(app.registerActionHandler('vessels.self',
                                               `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dimmingLevel`,
-                                              plugin.id,
                                               {
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
@@ -222,10 +216,6 @@ module.exports = function(app) {
           value: `Switch ${status.instance}.${empirbusIndex}`
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.displayName`,
-          value: `Switch ${status.instance}.${empirbusIndex}`     // FIXME: Should be read from defaults.json
-        },
-        {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.associatedDevice.instance`,
           value: status.instance                         // Technical address: Instance in EmpirBus API
         },
@@ -253,7 +243,6 @@ module.exports = function(app) {
       if ( !registeredForPut && app.registerActionHandler ) {
         onStop.push(app.registerActionHandler('vessels.self',
                                               switchValues[0].path,
-                                              plugin.id,
                                               {
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
@@ -282,7 +271,7 @@ module.exports = function(app) {
     onStop.forEach(f => f())
   }
 
-  function actionHandler(actionId, context, path, value, data, cb) {
+  function actionHandler(context, path, value, data, cb) {
     // Now we need to collect states of all devices of this instances
     // Simple way: Relay on Data Model 2 to collect dimmers 0+1 and switches 0-7
     // Potential later complex way: Parse all electrical.switches and filter for associatedDevice.instance
