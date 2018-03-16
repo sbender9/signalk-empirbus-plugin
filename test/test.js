@@ -29,7 +29,8 @@ describe('Read pgn 65280', () => {
   }),
   it('to actisense', () => {
     const state = {
-      dimmers: [ 0.5, 1 ],
+      dimmers: [ 500, 1000 ],
+      lastDimmingLevels: [ 1000, 1000 ],
       switches: [ 1, 0, 1, 0, 1, 0, 1, 0 ]
     }
     var actisense = plugin.generateStatePGN(0, state)
@@ -41,7 +42,7 @@ var expected = {
   "electrical": {
     "switches": {
       "empirBusNxt-instance0-dimmer1": {
-        //"state": true,
+        "state": true,
         "dimmingLevel": 0.5,
         "type": "dimmer",
         "name": "Dimmer 0.1",
@@ -57,7 +58,7 @@ var expected = {
         }
       },
       "empirBusNxt-instance0-dimmer2": {
-        //"state": true,
+        "state": true,
         "dimmingLevel": 1,
         "type": "dimmer",
         "name": "Dimmer 0.2",

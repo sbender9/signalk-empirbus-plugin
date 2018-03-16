@@ -113,8 +113,11 @@ module.exports = function(app) {
 
     if ( msg.pgn == pgnApiNumber && msg.fields['Manufacturer Code'] == manufacturerCode ) {
       var state = readData(msg.fields['Data'])
-      currentStateByInstance[state.instance] = state
+      if ( currentStateByInstance[state.instance] ) {
+        state.lastDimmingLevels = currentStateByInstance[state.instance].lastDimmingLevels
+      }
       app.handleMessage(plugin.id, createDelta(state))
+      currentStateByInstance[state.instance] = state
     }
   }
   
@@ -126,14 +129,9 @@ module.exports = function(app) {
     status.dimmers.forEach((value, index) => {
       var empirbusIndex = index +1
       var dimmerValues = [
-        /*
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.state`,
           value: value ? true : false
-        },*/
-        {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dimmingLevel`,
-          value: value / 1000.0
         },
         {
           path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.type`,
@@ -173,7 +171,6 @@ module.exports = function(app) {
         }
       ]
       if ( !registeredForPut && app.registerActionHandler ) {
-        /*
         onStop.push(app.registerActionHandler('vessels.self',
                                               dimmerValues[0].path,
                                               plugin.id,
@@ -183,17 +180,24 @@ module.exports = function(app) {
                                                 type: 'dimmerState'
                                               },
                                               actionHandler))
-        */
         onStop.push(app.registerActionHandler('vessels.self',
-                                              dimmerValues[0].path,
+                                              `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dimmingLevel`,
                                               plugin.id,
                                               {
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
-                                                type: 'dimmer'
+                                                type: 'dimmerLevel'
                                               },
                                               actionHandler))
       }
+      if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
+        values.push({
+          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dimmingLevel`,
+          value: value / 1000.0
+        })
+        status.lastDimmingLevels[index] = value 
+      }
+
       values = values.concat(dimmerValues)
     })
 
@@ -279,19 +283,28 @@ module.exports = function(app) {
     // Simple way: Relay on Data Model 2 to collect dimmers 0+1 and switches 0-7
     // Potential later complex way: Parse all electrical.switches and filter for associatedDevice.instance
 
-    var currentState = currentStateByInstance[data.instance+1]
+    var currentState = currentStateByInstance[data.instance]
+
+    debug(`setting ${data.type} to ${value} on instance ${data.instance}`)
 
     // Set respective parameter for the adressed dimmer or switch
-    if ( data.type == 'dimmer' ) { // :state is value of dimmingLevel
-      if ( Number(value) < 0 || Number(value) > 1 ) {
-        return { state: 'FAILURE', message: `Invalid dimmer value ${value}` }
-      }
-      currentState.dimmers[data.empirbusIndex-1] = value * 1000
-    } else {
+
+    if ( data.type === 'switch' || data.type === 'dimmerState' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
-        return { state: 'FAILURE', message: `Invalid switch value ${value}` }
+        return { state: 'COMPLETED', code:400, message: `Invalid switch value ${value}` }
       }
+    }
+    
+    if ( data.type === 'switch' ) {
       currentState.switches[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? 1 : 0;
+    } else if ( data.type === 'dimmerLevel' )  {
+      if ( value >= 0 && value <= 1 ) {
+        currentState.dimmers[data.empirbusIndex-1] = value * 1000
+      } else {
+        return { state: 'COMPLETED', code:400, message: `Invalid dimmer level ${value}` }
+      }
+    } else {
+      currentState.dimmers[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? currentState.lastDimmingLevels[data.empirbusIndex-1]  : 0
     }
 
     // Send out to all devices by pgnAddress = 255
@@ -299,7 +312,7 @@ module.exports = function(app) {
     debug('sending pgn %j', pgn)
     app.emit('nmea2000out', pgn)
 
-    return { state: 'SUCCESS' }
+    return { state: 'COMPLETED' }
 
     // Signal K keys are not updated here. EmpirBus implemenation needs to answer with new device state PNG for keys update
   }
@@ -481,7 +494,12 @@ module.exports = function(app) {
     for ( var i = 0; i < 8; i++ ) {
       switches.push(bits >> i & 0x01)
     }
-    return { instance: instance, dimmers: dimmers, switches: switches }
+    return {
+      instance: instance,
+      dimmers: dimmers,
+      switches: switches,
+      lastDimmingLevels: [ 1000, 1000 ]
+    }
   }
   plugin.readDataBuffer = readDataBuffer
 
