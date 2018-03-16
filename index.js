@@ -131,37 +131,46 @@ module.exports = function(app) {
 
     status.dimmers.forEach((value, index) => {
       var empirbusIndex = index +1   // EmpirBus devices are numbered 1..8, starting with 1
+      var dimmerPath = `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}`
       var dimmerValues = [
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.state`,
+          path: `${dimmerPath}.state`,
           value: value ? true : false
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.type`,
+          path: `${dimmerPath}.type`,
           value: "dimmer"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.name`,
+          path: `${dimmerPath}.name`,
           value: `Dimmer ${status.instance}.${empirbusIndex}`
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}`,
-          value: {
-            meta: {
-              associatedDevice: {
-                instance: status.instance,
-                device: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
-              },
-              source: switchingIdentifier,
-              dataModel: 2,
-              manufacturer: {
-                name: "EmpirBus",
-                model: "NXT DCM"
-              }
-            }
-          }
+          path: `${dimmerPath}.meta.associatedDevice.instance`,
+          value: status.instance                         // Technical address: Instance in EmpirBus API
+        },
+        {
+          path: `${dimmerPath}.meta.associatedDevice.device`,
+          value: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
+        },
+        {
+          path: `${dimmerPath}.meta.source`,
+          value: switchingIdentifier
+        },
+        {
+          path: `${dimmerPath}.meta.dataModel`,
+          value: 2
+        },
+        {
+          path: `${dimmerPath}.meta.manufacturer.name`,
+          value: "EmpirBus"
+        },
+        {
+          path: `${dimmerPath}.meta.manufacturer.model`,
+          value: "NXT DCM"
         }
       ]
+      
       if ( !registeredForPut && app.registerActionHandler ) {
         onStop.push(app.registerActionHandler('vessels.self',
                                               dimmerValues[0].path,
@@ -171,7 +180,7 @@ module.exports = function(app) {
                                                 type: 'dimmerState'
                                               })))
         onStop.push(app.registerActionHandler('vessels.self',
-                                              `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dimmingLevel`,
+                                              `${dimmerPath}.dimmingLevel`,
                                               getActionHandler({
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
@@ -180,7 +189,7 @@ module.exports = function(app) {
       }
       if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
         values.push({
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}.dimmingLevel`,
+          path: `${dimmerPath}.dimmingLevel`,
           value: value / 1000.0
         })
         status.lastDimmingLevels[index] = value 
@@ -189,44 +198,44 @@ module.exports = function(app) {
       values = values.concat(dimmerValues)
     })
 
-    // FIXME: Code is very redundant
     status.switches.forEach((value, index) => {
       var empirbusIndex = index +1
+      var switchPath = `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}`
       var switchValues = [
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.state`,
+          path: `${switchPath}.state`,
           value: value ? true : false
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.type`,
+          path: `${switchPath}.type`,
           value: "switch"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.name`,
+          path: `${switchPath}.name`,
           value: `Switch ${status.instance}.${empirbusIndex}`
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.associatedDevice.instance`,
+          path: `${switchPath}.meta.associatedDevice.instance`,
           value: status.instance                         // Technical address: Instance in EmpirBus API
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.associatedDevice.device`,
+          path: `${switchPath}.meta.associatedDevice.device`,
           value: `switch ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.source`,
+          path: `${switchPath}.meta.source`,
           value: switchingIdentifier
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.dataModel`,
+          path: `${switchPath}.meta.dataModel`,
           value: 2
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.manufacturer.name`,
+          path: `${switchPath}.meta.manufacturer.name`,
           value: "EmpirBus"
         },
         {
-          path: `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}.meta.manufacturer.model`,
+          path: `${switchPath}.meta.manufacturer.model`,
           value: "NXT DCM"
         }
       ]
