@@ -172,20 +172,20 @@ module.exports = function(app) {
       ]
       
       if ( !registeredForPut && app.registerActionHandler ) {
-        onStop.push(app.registerActionHandler('vessels.self',
-                                              dimmerValues[0].path,
-                                              getActionHandler({
-                                                instance: status.instance,
-                                                empirbusIndex: empirbusIndex,
-                                                type: 'dimmerState'
-                                              })))
-        onStop.push(app.registerActionHandler('vessels.self',
-                                              `${dimmerPath}.dimmingLevel`,
-                                              getActionHandler({
-                                                instance: status.instance,
-                                                empirbusIndex: empirbusIndex,
-                                                type: 'dimmerLevel'
-                                              })))
+        app.registerActionHandler('vessels.self',
+                                  dimmerValues[0].path,
+                                  getActionHandler({
+                                    instance: status.instance,
+                                    empirbusIndex: empirbusIndex,
+                                    type: 'dimmerState'
+                                  }))
+        app.registerActionHandler('vessels.self',
+                                  `${dimmerPath}.dimmingLevel`,
+                                  getActionHandler({
+                                    instance: status.instance,
+                                    empirbusIndex: empirbusIndex,
+                                    type: 'dimmerLevel'
+                                  }))
       }
       if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
         values.push({
@@ -240,13 +240,13 @@ module.exports = function(app) {
         }
       ]
       if ( !registeredForPut && app.registerActionHandler ) {
-        onStop.push(app.registerActionHandler('vessels.self',
+        app.registerActionHandler('vessels.self',
                                               switchValues[0].path,
                                               getActionHandler({
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
                                                 type: 'switch'
-                                              })))
+                                              }))
       }
       values = values.concat(switchValues)
     })
