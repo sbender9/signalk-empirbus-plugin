@@ -104,7 +104,7 @@ module.exports = function(app) {
                     && element.options.type == 'NMEA2000' ) {
           }
         }
-        if ( sendit ) {
+        if ( sendit || true ) {  // FIXME: Status request is forced
           sendStatusRequest()
           console.log('ISO request PGN 059904 sent on poweron for easy sync')
         }
@@ -116,14 +116,15 @@ module.exports = function(app) {
 
     if ( msg.pgn == pgnApiNumber && msg.fields['Manufacturer Code'] == manufacturerCode ) {
       var state = readData(msg.fields['Data'])
-      if ( currentStateByInstance[state.instance] ) {
+      debug('\nRecieved:\n %O', state);
+       if ( currentStateByInstance[state.instance] ) {
         state.lastDimmingLevels = currentStateByInstance[state.instance].lastDimmingLevels
       }
       app.handleMessage(plugin.id, createDelta(state))
       currentStateByInstance[state.instance] = state
     }
   }
-  
+
   function createDelta(status) {
     var values = []
 
@@ -136,6 +137,10 @@ module.exports = function(app) {
         {
           path: `${dimmerPath}.state`,
           value: value ? true : false
+        },
+        {
+          path: `${dimmerPath}.dimmingLevel`,      // Save even dimmingLevel 0 to create API key in any case
+          value: value / 1000.0
         },
         {
           path: `${dimmerPath}.type`,
@@ -170,7 +175,7 @@ module.exports = function(app) {
           value: "NXT DCM"
         }
       ]
-      
+
       if ( !registeredForPut && app.registerActionHandler ) {
         app.registerActionHandler('vessels.self',
                                   dimmerValues[0].path,
@@ -188,11 +193,7 @@ module.exports = function(app) {
                                   }))
       }
       if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
-        values.push({
-          path: `${dimmerPath}.dimmingLevel`,
-          value: value / 1000.0
-        })
-        status.lastDimmingLevels[index] = value 
+        status.lastDimmingLevels[index] = value
       }
 
       values = values.concat(dimmerValues)
@@ -291,7 +292,7 @@ module.exports = function(app) {
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid switch value ${value}` }
       }
     }
-    
+
     if ( data.type === 'switch' ) {
       currentState.switches[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? 1 : 0;
     } else if ( data.type === 'dimmerLevel' )  {
@@ -336,6 +337,8 @@ module.exports = function(app) {
     }
 
     var pgn_data = concentrate.result()
+
+    debug('\n Send: %O', pgn_data)
 
     // Send out to all devices by pgnAddress = 255
     return toActisenseSerialFormat(pgnApiNumber, pgn_data, pgnAddress)
