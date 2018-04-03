@@ -29,62 +29,9 @@ describe('Read pgn 65280', () => {
   }),
   it('to actisense', () => {
     const state = {
-      "empirBusNxt-instance0-dimmer1": {
-        "state": {
-          "value": true
-        },
-        "dimmingLevel": {
-          "value": 0.5
-        }
-      },
-      "empirBusNxt-instance0-dimmer2": {
-        "state": {
-          "value": true
-        },
-        "dimmingLevel": {
-          "value": 1
-        }
-      },
-      "empirBusNxt-instance0-switch1": {
-        "state": {
-          "value": true
-        }
-      },
-      "empirBusNxt-instance0-switch2": {
-        "state": {
-          "value": false
-        }
-      },
-      "empirBusNxt-instance0-switch3": {
-        "state": {
-          "value": true
-        }
-      },
-      "empirBusNxt-instance0-switch4": {
-        "state": {
-          "value": false
-        }
-      },
-      "empirBusNxt-instance0-switch5": {
-        "state": {
-          "value": true
-        }
-      },
-      "empirBusNxt-instance0-switch6": {
-        "state": {
-          "value": false
-        }
-      },
-      "empirBusNxt-instance0-switch7": {
-        "state": {
-          "value": true
-        }
-      },
-      "empirBusNxt-instance0-switch8": {
-        "state": {
-          "value": false
-        }
-      }
+      dimmers: [ 500, 1000 ],
+      lastDimmingLevels: [ 1000, 1000 ],
+      switches: [ 1, 0, 1, 0, 1, 0, 1, 0 ]
     }
     var actisense = plugin.generateStatePGN(0, state)
     actisense.substr(25).should.equal('2,65280,0,255,8,30,99,00,f4,01,e8,03,55')
