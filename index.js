@@ -78,7 +78,7 @@ module.exports = function(app) {
   var onStop = []
   var options
   var empirBusInstance
-  var registeredForPut = false
+  var registeredForPut = {}
   var currentStateByInstance = {}
 
   plugin.id = "signalk-empirbus-nxt";
@@ -176,7 +176,7 @@ module.exports = function(app) {
         }
       ]
 
-      if ( !registeredForPut && app.registerActionHandler ) {
+      if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
         app.registerActionHandler('vessels.self',
                                   dimmerValues[0].path,
                                   getActionHandler({
@@ -240,7 +240,7 @@ module.exports = function(app) {
           value: "NXT DCM"
         }
       ]
-      if ( !registeredForPut && app.registerActionHandler ) {
+      if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
         app.registerActionHandler('vessels.self',
                                               switchValues[0].path,
                                               getActionHandler({
@@ -252,7 +252,7 @@ module.exports = function(app) {
       values = values.concat(switchValues)
     })
 
-    registeredForPut = true
+    registeredForPut[status.instance] = true
 
     return {
       updates: [
