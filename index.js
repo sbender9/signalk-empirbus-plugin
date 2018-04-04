@@ -116,19 +116,20 @@ module.exports = function(app) {
 
     if ( msg.pgn == pgnApiNumber && msg.fields['Manufacturer Code'] == manufacturerCode ) {
       var state = readData(msg.fields['Data'])
-      debug('\nRecieved:\n %O', state);
-       if ( currentStateByInstance[state.instance] ) {
-        state.lastDimmingLevels = currentStateByInstance[state.instance].lastDimmingLevels
+
+      state.instance--;    // "Receive from network" instance = "Transmit to network" instance + 1
+
+      if ( currentStateByInstance[state.instance] ) {
+        state.restoreDimmingLevels = currentStateByInstance[state.instance].restoreDimmingLevels
       }
       app.handleMessage(plugin.id, createDelta(state))
       currentStateByInstance[state.instance] = state
+      debug('\nRecieved:\n %O', state);
     }
   }
 
   function createDelta(status) {
     var values = []
-
-    status.instance--;    // "Receive from network" instance = "Transmit to network" instance + 1
 
     status.dimmers.forEach((value, index) => {
       var empirbusIndex = index +1   // EmpirBus devices are numbered 1..8, starting with 1
@@ -193,7 +194,8 @@ module.exports = function(app) {
                                   }))
       }
       if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
-        status.lastDimmingLevels[index] = value
+        status.restoreDimmingLevels[index] = value
+        debug('Dimmer Level saved:', Number(value))
       }
 
       values = values.concat(dimmerValues)
@@ -283,12 +285,13 @@ module.exports = function(app) {
 
     var currentState = currentStateByInstance[data.instance]
 
-    debug('Data %O', data)
-
-    debug(`setting ${data.type} to ${value} on instance ${data.instance}`)
+    debug('\n')
+    // debug('Path: %O', path)
+    // debug('Value: %O', value)
+    // debug('Data: %O', data)
+    debug(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
 
     // Set respective parameter for the adressed dimmer or switch
-
     if ( data.type === 'switch' || data.type === 'dimmerState' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid switch value ${value}` }
@@ -300,16 +303,20 @@ module.exports = function(app) {
     } else if ( data.type === 'dimmerLevel' )  {
       if ( value >= 0 && value <= 1 ) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
+        // When changing dimmingLevel, HomeKit sends a pair of state = true and dimmingLevel=X faster than the current state is updated by PGN reply
+        // If restoreDimmingLevels is not set here, the state = true command restores a wrong value, preventing dimming
+        currentState.restoreDimmingLevels[data.empirbusIndex-1] = currentState.dimmers[data.empirbusIndex-1]
       } else {
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid dimmer level ${value}` }
       }
     } else {
-      currentState.dimmers[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? currentState.lastDimmingLevels[data.empirbusIndex-1]  : 0
+      currentState.dimmers[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? currentState.restoreDimmingLevels[data.empirbusIndex-1]  : 0
     }
 
     // Send out to all devices by pgnAddress = 255
     var pgn = plugin.generateStatePGN(data.instance, currentState)
-    debug('sending pgn %j', pgn)
+    debug('Send %O', currentState)
+    debug('Sending pgn %j', pgn)
     app.emit('nmea2000out', pgn)
 
     return { state: 'COMPLETED' }
@@ -339,8 +346,6 @@ module.exports = function(app) {
     }
 
     var pgn_data = concentrate.result()
-
-    debug('\n Send: %O', pgn_data)
 
     // Send out to all devices by pgnAddress = 255
     return toActisenseSerialFormat(pgnApiNumber, pgn_data, pgnAddress)
@@ -404,7 +409,7 @@ module.exports = function(app) {
       "properties": {
         "activeDevicesList": {
           "type": "array",
-          "title": "Deactivate blind devices in list",
+          // "title": "Deactivate blind devices in list",
           "items": {
             "type": "string",
             "enum": devices
@@ -500,11 +505,10 @@ module.exports = function(app) {
       instance: instance,
       dimmers: dimmers,
       switches: switches,
-      lastDimmingLevels: [ 1000, 1000 ]
+      restoreDimmingLevels: [ 1000, 1000 ]
     }
   }
   plugin.readDataBuffer = readDataBuffer
-
 
   return plugin;
 }
