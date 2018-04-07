@@ -208,9 +208,7 @@ module.exports = function(app) {
 
     for (var index = 2; index < status.switches.length; index++) {  // status.switches[0] and [1] handled above as dimmer states
 
-    }
-    status.switches.forEach((value, index) => {
-      var value status.switches[index]
+      var value = status.switches[index]
       var empirbusIndex = index +1
       var switchPath = `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}`
       var switchValues = [
@@ -261,7 +259,7 @@ module.exports = function(app) {
                                               }))
       }
       values = values.concat(switchValues)
-    })
+    }
 
     registeredForPut[status.instance] = true
 
@@ -309,13 +307,12 @@ module.exports = function(app) {
 
     if ( data.type === 'state' ) {      // maybe I should add: || (data.type === 'dimmerLevel' && value == 0)
       currentState.switches[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? 1 : 0;
+      if (currentState.switches[data.empirbusIndex-1] == 1 && currentState.dimmers[data.empirbusIndex-1] == 0 ) {  // Switching on with dimmingLevel 0 is not possible
+        currentState.dimmers[data.empirbusIndex-1] = 1000
+      }
     } else if ( data.type === 'dimmerLevel' )  {
       if ( value >= 0 && value <= 1 ) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
-        // When changing dimmingLevel, HomeKit sends a pair of state = true and dimmingLevel=X faster than the current state is updated by PGN reply
-        // If restoreDimmingLevels is not set here, the state = true command restores a wrong value, preventing dimming
-        // Should not be necessary any more, as commands are seperated now
-        // currentState.restoreDimmingLevels[data.empirbusIndex-1] = currentState.dimmers[data.empirbusIndex-1]
       } else {
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid dimmer level ${value}` }
       }

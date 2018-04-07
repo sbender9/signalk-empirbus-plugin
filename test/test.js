@@ -16,7 +16,7 @@ const plugin = require('../index')(app)
 
 describe('Read pgn 65280', () => {
   it('from buffer works', () => {
-    const correct_buffer = new Buffer(new Uint8Array([0x01,0xf4,0x01,0xe8,0x03,0x55]))
+    const correct_buffer = new Buffer(new Uint8Array([0x00,0xf4,0x01,0xe8,0x03,0x55]))
     var state = plugin.readDataBuffer(correct_buffer)
     var delta = plugin.createDelta(state)
     validate(delta)
@@ -47,7 +47,6 @@ var expected = {
         "type": "dimmer",
         "name": "Dimmer 0.1",
         "meta": {
-          "displayName": "Dimmer 0.1",
           "associatedDevice": {"instance":0,"device":"dimmer 1"},
           "source": "empirBusNxt",
           "dataModel": 2,
@@ -58,43 +57,12 @@ var expected = {
         }
       },
       "empirBusNxt-instance0-dimmer2": {
-        "state": true,
+        "state": false,
         "dimmingLevel": 1,
         "type": "dimmer",
         "name": "Dimmer 0.2",
         "meta": {
-          "displayName": "Dimmer 0.2",
           "associatedDevice": {"instance":0,"device":"dimmer 2"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
-      },
-      "empirBusNxt-instance0-switch1": {
-        "state": true,
-        "type": "switch",
-        "name": "Switch 0.1",
-        "meta": {
-          "displayName": "Switch 0.1",
-          "associatedDevice": {"instance":0,"device":"switch 1"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
-      },
-      "empirBusNxt-instance0-switch2": {
-        "state": false,
-        "type": "switch",
-        "name": "Switch 0.2",
-        "meta": {
-          "displayName": "Switch 0.2",
-          "associatedDevice": {"instance":0,"device":"switch 2"},
           "source": "empirBusNxt",
           "dataModel": 2,
           "manufacturer": {
@@ -108,7 +76,6 @@ var expected = {
         "type": "switch",
         "name": "Switch 0.3",
         "meta": {
-          "displayName": "Switch 0.3",
           "associatedDevice": {"instance":0,"device":"switch 3"},
           "source": "empirBusNxt",
           "dataModel": 2,
@@ -123,7 +90,6 @@ var expected = {
         "type": "switch",
         "name": "Switch 0.4",
         "meta": {
-          "displayName": "Switch 0.4",
           "associatedDevice": {"instance":0,"device":"switch 4"},
           "source": "empirBusNxt",
           "dataModel": 2,
@@ -138,7 +104,6 @@ var expected = {
         "type": "switch",
         "name": "Switch 0.5",
         "meta": {
-          "displayName": "Switch 0.5",
           "associatedDevice": {"instance":0,"device":"switch 5"},
           "source": "empirBusNxt",
           "dataModel": 2,
@@ -153,7 +118,6 @@ var expected = {
         "type": "switch",
         "name": "Switch 0.6",
         "meta": {
-          "displayName": "Switch 0.6",
           "associatedDevice": {"instance":0,"device":"switch 6"},
           "source": "empirBusNxt",
           "dataModel": 2,
@@ -168,7 +132,6 @@ var expected = {
         "type": "switch",
         "name": "Switch 0.7",
         "meta": {
-          "displayName": "Switch 0.7",
           "associatedDevice": {"instance":0,"device":"switch 7"},
           "source": "empirBusNxt",
           "dataModel": 2,
@@ -183,7 +146,6 @@ var expected = {
         "type": "switch",
         "name": "Switch 0.8",
         "meta": {
-          "displayName": "Switch 0.8",
           "associatedDevice": {"instance":0,"device":"switch 8"},
           "source": "empirBusNxt",
           "dataModel": 2,
