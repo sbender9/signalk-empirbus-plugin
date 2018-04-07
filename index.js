@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-// Key path according to EmpirBus Application Specific PGN Data Model 2 (2x word + 8x bit) per instance:
-// 2x dimmer values 0 = off .. 1000 = 100%, 8x switch values 0 = off / 1 = on
+// Key path according to EmpirBus Application Specific PGN 65280 Data Model 2 (2x word + 8x bit) per instance:
+// 2x dimmer dimmingLevel 0 = 0% .. 1000 = 100%,
+// 8x switch states true = on / false = off
+// First two switches represent the state of the two dimmers
 //
 // EmpirBus implementation has to use these instances in the API PGN component:
 // “Receive from network”: X (e.g. 0, 2, 4, 6)
 // “Transmit to network”: X + 1 (e.g. 1, 3, 5, 7)
 //
-// EmpirBus devices are numbered 1..8. To avoid confusion Signal K device names numbered accordingly starting from 1, not from 0
-//
-// electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#1..2>.state
+// EmpirBus API PGN component connectors are numbered Word 1..2 + Bit 1..8.
+// To avoid confusion Signal K device names are numbered accordingly starting from 1, not from 0
+// electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-dimmer<#1..2>.dimmingLevel
 // electrical.switches.empirBusNxt-instance<NXT component instance 0..49>-switch<#1..8>.state
-
+// The first two switches represent the state of the two dimmers
+//
+// Signak K API keys for EmpirBus NXT devices:
 // electrical/switches/<identifier>
 // electrical/switches/<identifier>/state  (true|false)
 // electrical/switches/<identifier>/dimmingLevel  (0..1)
-// electrical/switches/<identifier>/type   (switch | dimmer | relais | etc.)
+// electrical/switches/<identifier>/type   (switch | dimmer)
 // electrical/switches/<identifier>/name   (System name of control, e.g. Switch 0.8)
 //
 // electrical/switches/<identifier>/meta/displayName   (Display name of control)
@@ -37,24 +41,25 @@
 // electrical/switches/<identifier>/meta/associatedDevice/instance (Technical device address: Instance in EmpirBus API)
 // electrical/switches/<identifier>/meta/associatedDevice/device (Technical device address: Device in instance in EmpirBus API e.g. "switch 1" or "dimmer 1")
 
-// electrical/switches/<identifier>/meta/source (Information what plugin needs to take care of device)
-// electrical/switches/<identifier>/meta/dataModel (Bus Data Model, e.g. from the EmpirBus programming)
+// electrical/switches/<identifier>/meta/source (Information what plugin needs to take care of the device)
+// electrical/switches/<identifier>/meta/dataModel (Bus Data Model used in the EmpirBus programming, currently only Data Model 2 is supported)
 //
-// electrical/switches/<identifier>/meta/manufacturer/name
-// electrical/switches/<identifier>/meta/manufacturer/model
+// electrical/switches/<identifier>/meta/manufacturer/name ("EmpirBus")
+// electrical/switches/<identifier>/meta/manufacturer/model ("NXT DCM")
 //
-// <identifier> is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary decive address (systemname-deviceaddress), e.g. for EmpirBus NXT devices this is empirBusNxt-instance<instance>-dimmer|switch<#>
+//
+// <identifier> is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary decive address (systemname-deviceaddress),
+// e.g. for EmpirBus NXT devices this is empirBusNxt-instance<instance>-dimmer|switch<#>
 // <instance> is the instance of the respective “Receive from network” EmpirBus NXT API component for 3rd party communication 0..49
 // <#> is the ID of the dimmer (1..2) or switch (1..8)
 // state is state of switch or dimmer 'on' or 'off'
 // dimmingLevel is the dimming value of dimmer from 0.000 to 1.000 (decimal)
 // associatedDevice is the address of device proprietary to the plugin and digital switching system, e.g. for EmpirBus NXT {"instance":0,"switch":1} or {"instance":0,"dimmer":1}
 
-// Values to send to device are expected via PUT method at: electrical/switches/<identifier>/<state>|<dimmingLevel>
+// Values to send to device are expected via PUT method at: electrical/switches/<identifier>/state|dimmingLevel
 // e.g. electrical/switches/empirBusNxt-instance0-dimmer0/dimmingLevel
-// {
-//  "value" = 0.75
-// }
+// body: {value:0.75}
+// body: JSON.stringify({value: value})
 
 
 const debug = require("debug")("signalk-empirbusnxt")
@@ -78,7 +83,7 @@ module.exports = function(app) {
   var onStop = []
   var options
   var empirBusInstance
-  var registeredForPut = false
+  var registeredForPut = {}
   var currentStateByInstance = {}
 
   plugin.id = "signalk-empirbus-nxt";
@@ -104,7 +109,7 @@ module.exports = function(app) {
                     && element.options.type == 'NMEA2000' ) {
           }
         }
-        if ( sendit ) {
+        if ( sendit || true ) {  // FIXME: Status request is forced
           sendStatusRequest()
           console.log('ISO request PGN 059904 sent on poweron for easy sync')
         }
@@ -116,18 +121,20 @@ module.exports = function(app) {
 
     if ( msg.pgn == pgnApiNumber && msg.fields['Manufacturer Code'] == manufacturerCode ) {
       var state = readData(msg.fields['Data'])
+
+      state.instance--;    // "Receive from network" instance = "Transmit to network" instance + 1
+
       if ( currentStateByInstance[state.instance] ) {
-        state.lastDimmingLevels = currentStateByInstance[state.instance].lastDimmingLevels
+        state.restoreDimmingLevels = currentStateByInstance[state.instance].restoreDimmingLevels
       }
       app.handleMessage(plugin.id, createDelta(state))
       currentStateByInstance[state.instance] = state
+      debug('\nRecieved:\n %O', state);
     }
   }
-  
+
   function createDelta(status) {
     var values = []
-
-    status.instance--;    // "Receive from network" instance = "Transmit to network" instance + 1
 
     status.dimmers.forEach((value, index) => {
       var empirbusIndex = index +1   // EmpirBus devices are numbered 1..8, starting with 1
@@ -135,7 +142,11 @@ module.exports = function(app) {
       var dimmerValues = [
         {
           path: `${dimmerPath}.state`,
-          value: value ? true : false
+          value: status.switches[index] ? true : false
+        },
+        {
+          path: `${dimmerPath}.dimmingLevel`,      // Save even dimmingLevel 0 to create API key in any case
+          value: value / 1000.0
         },
         {
           path: `${dimmerPath}.type`,
@@ -151,7 +162,7 @@ module.exports = function(app) {
         },
         {
           path: `${dimmerPath}.meta.associatedDevice.device`,
-          value: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
+          value: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus API
         },
         {
           path: `${dimmerPath}.meta.source`,
@@ -170,14 +181,14 @@ module.exports = function(app) {
           value: "NXT DCM"
         }
       ]
-      
-      if ( !registeredForPut && app.registerActionHandler ) {
+
+      if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
         app.registerActionHandler('vessels.self',
-                                  dimmerValues[0].path,
+                                  `${dimmerPath}.state`,
                                   getActionHandler({
                                     instance: status.instance,
                                     empirbusIndex: empirbusIndex,
-                                    type: 'dimmerState'
+                                    type: 'state'
                                   }))
         app.registerActionHandler('vessels.self',
                                   `${dimmerPath}.dimmingLevel`,
@@ -188,17 +199,16 @@ module.exports = function(app) {
                                   }))
       }
       if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
-        values.push({
-          path: `${dimmerPath}.dimmingLevel`,
-          value: value / 1000.0
-        })
-        status.lastDimmingLevels[index] = value 
+        status.restoreDimmingLevels[index] = value
+        debug('Dimmer Level saved:', Number(value))
       }
 
       values = values.concat(dimmerValues)
     })
 
-    status.switches.forEach((value, index) => {
+    for (var index = 2; index < status.switches.length; index++) {  // status.switches[0] and [1] handled above as dimmer states
+
+      var value = status.switches[index]
       var empirbusIndex = index +1
       var switchPath = `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}`
       var switchValues = [
@@ -239,19 +249,19 @@ module.exports = function(app) {
           value: "NXT DCM"
         }
       ]
-      if ( !registeredForPut && app.registerActionHandler ) {
+      if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
         app.registerActionHandler('vessels.self',
-                                              switchValues[0].path,
+                                              `${switchPath}.state`,
                                               getActionHandler({
                                                 instance: status.instance,
                                                 empirbusIndex: empirbusIndex,
-                                                type: 'switch'
+                                                type: 'state'
                                               }))
       }
       values = values.concat(switchValues)
-    })
+    }
 
-    registeredForPut = true
+    registeredForPut[status.instance] = true
 
     return {
       updates: [
@@ -282,31 +292,36 @@ module.exports = function(app) {
 
     var currentState = currentStateByInstance[data.instance]
 
-    debug(`setting ${data.type} to ${value} on instance ${data.instance}`)
+    debug('\n')
+    // debug('Path: %O', path)
+    // debug('Value: %O', value)
+    // debug('Data: %O', data)
+    debug(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
 
     // Set respective parameter for the adressed dimmer or switch
-
-    if ( data.type === 'switch' || data.type === 'dimmerState' ) {
+    if ( data.type === 'state' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid switch value ${value}` }
       }
     }
-    
-    if ( data.type === 'switch' ) {
+
+    if ( data.type === 'state' ) {      // maybe I should add: || (data.type === 'dimmerLevel' && value == 0)
       currentState.switches[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? 1 : 0;
+      if (currentState.switches[data.empirbusIndex-1] == 1 && currentState.dimmers[data.empirbusIndex-1] == 0 ) {  // Switching on with dimmingLevel 0 is not possible
+        currentState.dimmers[data.empirbusIndex-1] = 1000
+      }
     } else if ( data.type === 'dimmerLevel' )  {
       if ( value >= 0 && value <= 1 ) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
       } else {
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid dimmer level ${value}` }
       }
-    } else {
-      currentState.dimmers[data.empirbusIndex-1] = (value === true || value === 'on' || value === 1) ? currentState.lastDimmingLevels[data.empirbusIndex-1]  : 0
     }
 
     // Send out to all devices by pgnAddress = 255
     var pgn = plugin.generateStatePGN(data.instance, currentState)
-    debug('sending pgn %j', pgn)
+    debug('Send %O', currentState)
+    debug('Sending pgn %j', pgn)
     app.emit('nmea2000out', pgn)
 
     return { state: 'COMPLETED' }
@@ -399,7 +414,7 @@ module.exports = function(app) {
       "properties": {
         "activeDevicesList": {
           "type": "array",
-          "title": "Deactivate blind devices in list",
+          // "title": "Deactivate blind devices in list",
           "items": {
             "type": "string",
             "enum": devices
@@ -495,11 +510,10 @@ module.exports = function(app) {
       instance: instance,
       dimmers: dimmers,
       switches: switches,
-      lastDimmingLevels: [ 1000, 1000 ]
+      restoreDimmingLevels: [ 1000, 1000 ]
     }
   }
   plugin.readDataBuffer = readDataBuffer
-
 
   return plugin;
 }
