@@ -96,24 +96,9 @@ module.exports = function(app) {
 
     app.on('N2KAnalyzerOut', plugin.listener)
 
-    app.on("pipedProvidersStarted", (config) => {
-      config.pipeElements.forEach(function(element) {
-        var sendit = false
-        if ( typeof element.options != 'undefined' ) {
-          if ( typeof element.options.toChildProcess != 'undefined'
-               && element.options.toChildProcess == 'nmea2000out' )
-          {
-            sendit = true
-          }
-          else if ( element.type == 'providers/simple'
-                    && element.options.type == 'NMEA2000' ) {
-          }
-        }
-        if ( sendit || true ) {  // FIXME: Status request is forced
-          sendStatusRequest()
-          console.log('ISO request PGN 059904 sent on poweron for easy sync')
-        }
-      })
+    app.on('nmea2000OutAvailable', () => {
+      sendStatusRequest()
+      console.log('ISO request PGN 059904 sent on poweron for easy sync')
     })
   }
 
@@ -399,12 +384,12 @@ module.exports = function(app) {
     _.keys(switches).forEach(device => {
       if ((device.slice(0,switchingIdentifier.length)) == switchingIdentifier ) {
         devices = devices.concat(switches[device].name.value)
-          //     identifier: device,
-          //     type: switches[device].type.value,
-          //     name: switches[device].name.value,
-          //     displayName: switches[device].meta.displayName.value,
-          //     instance : switches[device].associatedDevice.instance.value,
-          //     device : switches[device].associatedDevice.device.value
+        //     identifier: device,
+        //     type: switches[device].type.value,
+        //     name: switches[device].name.value,
+        //     displayName: switches[device].meta.displayName.value,
+        //     instance : switches[device].associatedDevice.instance.value,
+        //     device : switches[device].associatedDevice.device.value
       }
     })
 
