@@ -97,8 +97,10 @@ module.exports = function(app) {
     app.on('N2KAnalyzerOut', plugin.listener)
 
     app.on('nmea2000OutAvailable', () => {
-      sendStatusRequest()
-      console.log('ISO request PGN 059904 sent on poweron for easy sync')
+      setTimeout( () => {
+        sendStatusRequest()
+        console.log('ISO request PGN 059904 sent on poweron for easy sync')
+      }, 2000)
     })
   }
 
