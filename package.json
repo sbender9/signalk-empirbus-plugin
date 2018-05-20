@@ -1,6 +1,6 @@
 {
   "name": "signalk-empirbusnxt-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "EmpirBus NXT Control",
   "main": "index.js",
   "scripts": {
