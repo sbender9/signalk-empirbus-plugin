@@ -369,7 +369,7 @@ module.exports = function(app) {
 
   plugin.schema = function() {
 
-    var switches = _.get(app.signalk.self, `${instancePath}`)
+    var switches = app.getSelfPath(instancePath)
 
     // Error Message if no electrical switches keys at all
     if ( _.isUndefined(switches) ) {
