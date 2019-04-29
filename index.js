@@ -86,19 +86,21 @@ module.exports = function(app) {
   var registeredForPut = {}
   var currentStateByInstance = {}
 
-  plugin.id = "signalk-empirbus-nxt";
-  plugin.name = "EmpirBus NXT Control";
+  plugin.id = "signalk-empirbus-nxt"
+  plugin.name = "EmpirBus NXT Control"
 
   plugin.start = function(theOptions) {
-    debug("Starting: EmpirBus NXT Control");
+    debug('Starting: EmpirBus NXT Control')
 
     options = theOptions
 
     app.on('N2KAnalyzerOut', plugin.listener)
+    app.setProviderStatus('Waiting for NMEA2000 connect')
 
     app.on('nmea2000OutAvailable', () => {
       setTimeout( () => {
         sendStatusRequest()
+        app.setProviderStatus('ISO request PGN 059904 sent for sync')
         console.log('ISO request PGN 059904 sent on poweron for easy sync')
       }, 2000)
     })
@@ -116,7 +118,8 @@ module.exports = function(app) {
       }
       app.handleMessage(plugin.id, createDelta(state))
       currentStateByInstance[state.instance] = state
-      debug('\nRecieved:\n %O', state);
+      app.setProviderStatus(`EmpirBus instance ${state.instance} status recieved`)
+      debug('\nRecieved:\n %O', state)
     }
   }
 
@@ -284,10 +287,12 @@ module.exports = function(app) {
     // debug('Value: %O', value)
     // debug('Data: %O', data)
     debug(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
+    app.setProviderStatus(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
 
     // Set respective parameter for the adressed dimmer or switch
     if ( data.type === 'state' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
+        app.setProviderError(`Invalid switch value ${value} (Instance ${data.instance})`)
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid switch value ${value}` }
       }
     }
@@ -301,6 +306,7 @@ module.exports = function(app) {
       if ( value >= 0 && value <= 1 ) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
       } else {
+        app.setProviderError(`Invalid dimmer level ${value} (Instance ${data.instance})`)
         return { state: 'COMPLETED', resultStatus:400, message: `Invalid dimmer level ${value}` }
       }
     }
@@ -310,6 +316,7 @@ module.exports = function(app) {
     debug('Send %O', currentState)
     debug('Sending pgn %j', pgn)
     app.emit('nmea2000out', pgn)
+    app.setProviderStatus(`${data.type} ${data.instance}.${data.empirbusIndex} set to ${value} (Instance ${data.instance})`)
 
     return { state: 'COMPLETED' }
 
