@@ -287,7 +287,7 @@ module.exports = function(app) {
     // debug('Value: %O', value)
     // debug('Data: %O', data)
     debug(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
-    app.setProviderStatus(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
+    app.setProviderStatus(`Setting device ${data.instance}.${data.empirbusIndex} ${data.type} to ${value} (Instance ${data.instance})`)
 
     // Set respective parameter for the adressed dimmer or switch
     if ( data.type === 'state' ) {
@@ -316,7 +316,7 @@ module.exports = function(app) {
     debug('Send %O', currentState)
     debug('Sending pgn %j', pgn)
     app.emit('nmea2000out', pgn)
-    app.setProviderStatus(`${data.type} ${data.instance}.${data.empirbusIndex} set to ${value} (Instance ${data.instance})`)
+    app.setProviderStatus(`Device ${data.instance}.${data.empirbusIndex} ${data.type} set to ${value} (Instance ${data.instance})`)
 
     return { state: 'COMPLETED' }
 
