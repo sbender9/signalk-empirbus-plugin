@@ -69,7 +69,7 @@ const Bitfield = require("bitfield")
 const Int64LE = require('int64-buffer').Int64LE
 const _ = require('lodash')
 
-const manufacturerCode = "Empirbus" // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
+const manufacturerCode = "Empir Bus" // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
 const pgnIsoNumber = 059904 // NMEA 2000 ISO request PGN 059904 - Single Frame, Destination Address Global
 const pgnAddress = 255 // Device to send to, 255 = global address, used for sending addressed messages to all nodes
@@ -120,6 +120,9 @@ module.exports = function(app) {
       currentStateByInstance[state.instance] = state
       app.setProviderStatus(`EmpirBus instance ${state.instance} status recieved`)
       debug('\nRecieved:\n %O', state)
+    } else if ( msg.pgn == pgnApiNumber ) {
+      app.setProviderStatus(`PGN 65280 Manufacturer Code ${msg.fields['Manufacturer Code']} ignored`)
+      console.log('\nPGN 65280 ignored:\n %O', msg)
     }
   }
 
@@ -293,7 +296,7 @@ module.exports = function(app) {
     if ( data.type === 'state' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
         app.setProviderError(`Invalid switch value ${value} (Instance ${data.instance})`)
-        return { state: 'COMPLETED', resultStatus:400, message: `Invalid switch value ${value}` }
+        return { state: 'COMPLETED', statusCode:400, message: `Invalid switch value ${value}` }
       }
     }
 
@@ -307,7 +310,7 @@ module.exports = function(app) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
       } else {
         app.setProviderError(`Invalid dimmer level ${value} (Instance ${data.instance})`)
-        return { state: 'COMPLETED', resultStatus:400, message: `Invalid dimmer level ${value}` }
+        return { state: 'COMPLETED', statusCode:400, message: `Invalid dimmer level ${value}` }
       }
     }
 
@@ -318,7 +321,7 @@ module.exports = function(app) {
     app.emit('nmea2000out', pgn)
     app.setProviderStatus(`Device ${data.instance}.${data.empirbusIndex} ${data.type} set to ${value} (Instance ${data.instance})`)
 
-    return { state: 'COMPLETED' }
+    return { state: 'COMPLETED', statusCode:200 }
 
     // Signal K keys are not updated here. EmpirBus implementation needs to answer with new device state PNG for keys update
   }
