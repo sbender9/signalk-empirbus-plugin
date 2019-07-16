@@ -296,7 +296,7 @@ module.exports = function(app) {
     if ( data.type === 'state' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
         app.setProviderError(`Invalid switch value ${value} (Instance ${data.instance})`)
-        return { state: 'COMPLETED', resultStatus:400, message: `Invalid switch value ${value}` }
+        return { state: 'COMPLETED', statusCode:400, message: `Invalid switch value ${value}` }
       }
     }
 
@@ -310,7 +310,7 @@ module.exports = function(app) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
       } else {
         app.setProviderError(`Invalid dimmer level ${value} (Instance ${data.instance})`)
-        return { state: 'COMPLETED', resultStatus:400, message: `Invalid dimmer level ${value}` }
+        return { state: 'COMPLETED', statusCode:400, message: `Invalid dimmer level ${value}` }
       }
     }
 
@@ -321,7 +321,7 @@ module.exports = function(app) {
     app.emit('nmea2000out', pgn)
     app.setProviderStatus(`Device ${data.instance}.${data.empirbusIndex} ${data.type} set to ${value} (Instance ${data.instance})`)
 
-    return { state: 'COMPLETED' }
+    return { state: 'COMPLETED', statusCode:200 }
 
     // Signal K keys are not updated here. EmpirBus implementation needs to answer with new device state PNG for keys update
   }
