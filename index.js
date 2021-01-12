@@ -62,7 +62,7 @@
 // body: JSON.stringify({value: value})
 
 
-const debug = require("debug")("signalk-empirbusnxt")
+// const debug = require("debug")("signalk-empirbusnxt") Debug handled by Signal K Server
 const path = require('path')
 const Concentrate2 = require("concentrate2");
 const Bitfield = require("bitfield")
@@ -86,21 +86,22 @@ module.exports = function(app) {
   var registeredForPut = {}
   var currentStateByInstance = {}
 
-  plugin.id = "signalk-empirbus-nxt"
-  plugin.name = "EmpirBus NXT Control"
+  plugin.id = 'signalk-empirbus-nxt'
+  plugin.name = 'EmpirBus NXT Control'
+  plugin.description = 'Monitor and control an EmpirBus NXT via EmpirBus Application Specific PGN 65280 using EmpirBus NXT API component for 3rd party communication'
 
   plugin.start = function(theOptions) {
-    debug('Starting: EmpirBus NXT Control')
+    app.debug('Starting: EmpirBus NXT Control')
 
     options = theOptions
 
     app.on('N2KAnalyzerOut', plugin.listener)
-    app.setProviderStatus('Waiting for NMEA2000 connect')
+    app.setPluginStatus('Waiting for NMEA2000 connect')
 
     app.on('nmea2000OutAvailable', () => {
       setTimeout( () => {
         sendStatusRequest()
-        app.setProviderStatus('ISO request PGN 059904 sent for sync')
+        app.setPluginStatus('ISO request PGN 059904 sent for sync')
         console.log('ISO request PGN 059904 sent on poweron for easy sync')
       }, 2000)
     })
@@ -118,10 +119,10 @@ module.exports = function(app) {
       }
       app.handleMessage(plugin.id, createDelta(state))
       currentStateByInstance[state.instance] = state
-      app.setProviderStatus(`EmpirBus instance ${state.instance} status recieved`)
-      debug('\nRecieved:\n %O', state)
+      app.setPluginStatus(`EmpirBus instance ${state.instance} status recieved`)
+      app.debug('\nRecieved:\n %O', state)
     } else if ( msg.pgn == pgnApiNumber ) {
-      app.setProviderStatus(`PGN 65280 Manufacturer Code ${msg.fields['Manufacturer Code']} ignored`)
+      app.setPluginStatus(`PGN 65280 Manufacturer Code ${msg.fields['Manufacturer Code']} ignored`)
       console.log('\nPGN 65280 ignored:\n %O', msg)
     }
   }
@@ -193,7 +194,7 @@ module.exports = function(app) {
       }
       if  (Number(value)>0 ) { // Do not save dimmingLevel=0 if dimmer is off, so last dimmingLevel can be restored when switching back on
         status.restoreDimmingLevels[index] = value
-        debug('Dimmer Level saved:', Number(value))
+        app.debug('Dimmer Level saved:', Number(value))
       }
 
       values = values.concat(dimmerValues)
@@ -285,17 +286,17 @@ module.exports = function(app) {
 
     var currentState = currentStateByInstance[data.instance]
 
-    debug('\n')
-    // debug('Path: %O', path)
-    // debug('Value: %O', value)
-    // debug('Data: %O', data)
-    debug(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
-    app.setProviderStatus(`Setting device ${data.instance}.${data.empirbusIndex} ${data.type} to ${value} (Instance ${data.instance})`)
+    app.debug('\n')
+    // app.debug('Path: %O', path)
+    // app.debug('Value: %O', value)
+    // app.debug('Data: %O', data)
+    app.debug(`Setting ${data.type} ${data.instance}.${data.empirbusIndex} to ${value} (Instance ${data.instance})`)
+    app.setPluginStatus(`Setting device ${data.instance}.${data.empirbusIndex} ${data.type} to ${value} (Instance ${data.instance})`)
 
     // Set respective parameter for the adressed dimmer or switch
     if ( data.type === 'state' ) {
       if ( validSwitchValues.indexOf(value) == -1 ) {
-        app.setProviderError(`Invalid switch value ${value} (Instance ${data.instance})`)
+        app.setPluginError(`Invalid switch value ${value} (Instance ${data.instance})`)
         return { state: 'COMPLETED', statusCode:400, message: `Invalid switch value ${value}` }
       }
     }
@@ -309,17 +310,17 @@ module.exports = function(app) {
       if ( value >= 0 && value <= 1 ) {
         currentState.dimmers[data.empirbusIndex-1] = value * 1000
       } else {
-        app.setProviderError(`Invalid dimmer level ${value} (Instance ${data.instance})`)
+        app.setPluginError(`Invalid dimmer level ${value} (Instance ${data.instance})`)
         return { state: 'COMPLETED', statusCode:400, message: `Invalid dimmer level ${value}` }
       }
     }
 
     // Send out to all devices by pgnAddress = 255
     var pgn = plugin.generateStatePGN(data.instance, currentState)
-    debug('Send %O', currentState)
-    debug('Sending pgn %j', pgn)
+    app.debug('Send %O', currentState)
+    app.debug('Sending pgn %j', pgn)
     app.emit('nmea2000out', pgn)
-    app.setProviderStatus(`Device ${data.instance}.${data.empirbusIndex} ${data.type} set to ${value} (Instance ${data.instance})`)
+    app.setPluginStatus(`Device ${data.instance}.${data.empirbusIndex} ${data.type} set to ${value} (Instance ${data.instance})`)
 
     return { state: 'COMPLETED', statusCode:200 }
 
@@ -395,7 +396,7 @@ module.exports = function(app) {
     var devices = []
     _.keys(switches).forEach(device => {
       if ((device.slice(0,switchingIdentifier.length)) == switchingIdentifier ) {
-        devices = devices.concat(switches[device].name.value)
+        devices = devices.concat((switches[device].name||{}).value || device)
         //     identifier: device,
         //     type: switches[device].type.value,
         //     name: switches[device].name.value,
@@ -411,7 +412,7 @@ module.exports = function(app) {
       "properties": {
         "activeDevicesList": {
           "type": "array",
-          // "title": "Deactivate blind devices in list",
+          "title": "List of devices found:",
           "items": {
             "type": "string",
             "enum": devices
