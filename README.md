@@ -1,5 +1,8 @@
-# signalk-empirbusnxt-plugin
-Monitor and control an EmpirBus NXT via EmpirBus Application Specific PGN 65280 using EmpirBus NXT API component for 3rd party communication
+# Signal K EmpirBus NXT Plugin
+<a href="https://www.npmjs.com/package/signalk-empirbusnxt-plugin"><img title="npm version" src="https://badgen.net/npm/v/signalk-empirbusnxt-plugin" ></a>
+<a href="https://www.npmjs.com/package/signalk-empirbusnxt-plugin"><img title="npm downloads" src="https://badgen.net/npm/dt/signalk-empirbusnxt-plugin"></a>
+
+Monitor and control an EmpirBus NXT via EmpirBus application specific PGN 65280 using EmpirBus NXT API component for 3rd party communication
 
 This plugin relies on the "Data Model 2" to read and write the status of 2x dimmers with EmpirBus values 0..1000 and 8x switches 0|1 per instance of an EmpirBus Application Specific PGN component. The first two switches represent the state of the two dimmers.
 
