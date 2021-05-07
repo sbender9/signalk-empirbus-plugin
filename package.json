@@ -8,7 +8,9 @@
     "test": "mocha --exit"
   },
   "keywords": [
-    "signalk-node-server-plugin"
+    "signalk-node-server-plugin",
+    "signalk-category-hardware",
+    "signalk-category-digital-switching"
   ],
   "author": {
     "name": "Scott Bender",
@@ -26,7 +28,7 @@
     "concentrate2": "^0.0.1",
     "bitfield": "^1.1.2",
     "int64-buffer": "^0.1.10",
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "chai": "~4.1.0",
