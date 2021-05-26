@@ -378,115 +378,13 @@ module.exports = function(app) {
              toActisenseSerialFormat(pgnIsoNumber, pgn_data, 255))
   }
 
-  plugin.schema = function() {
-
-    var switches = app.getSelfPath(instancePath)
-
-    // Error Message if no electrical switches keys at all
-    if ( _.isUndefined(switches) ) {
-      dynamicSchema = {
-        "description": `EmpirBus NXT not connected: No devices found at ${instancePath}`,
-        "type": "object",
-        "properties": {
-        }
-      }
-      return dynamicSchema;
-    }
-
-    var devices = []
-    _.keys(switches).forEach(device => {
-      if ((device.slice(0,switchingIdentifier.length)) == switchingIdentifier ) {
-        devices = devices.concat((switches[device].name||{}).value || device)
-        //     identifier: device,
-        //     type: switches[device].type.value,
-        //     name: switches[device].name.value,
-        //     displayName: switches[device].meta.displayName.value,
-        //     instance : switches[device].associatedDevice.instance.value,
-        //     device : switches[device].associatedDevice.device.value
-      }
-    })
-
-    dynamicSchema = {
-      "description": `EmpirBus NXT devices found at ${instancePath}`,
-      "type": "object",
-      "properties": {
-        "activeDevicesList": {
-          "type": "array",
-          "title": "List of devices found:",
-          "items": {
-            "type": "string",
-            "enum": devices
-          },
-          "uniqueItems": true
-        }
-      }
-    }
-
-    return dynamicSchema;
-  }
+  plugin.schema = {
+    "description": "This plugin has no settings. Use the Data Browser to check for EmpiBus NXT devices at path electrical.switches.empirBusNxt."
+  };
 
   plugin.uiSchema = {
-    "activeDevicesList": {
-       "ui:widget": "checkboxes"
-     },
-  }
+  };
 
-  // /*
-  //   dataModel: {
-  //   title: 'Data Model',
-  //   type: 'number',
-  //   enum: [ 1, 2, 3, 4, 5],
-  //   enumNames: [ 'Model 1', 'Model 2', 'Model 3', 'Model 4', 'Model 5']
-  // */
-
-  // plugin.schema = {
-  //   "title": "Empire Bus NXT",
-  //   "type": "object",
-  //   "properties": {
-  //     "devices": {
-  //       "type": "array",
-  //       "title": "Devices",
-  //       "items": {
-  //         "type": "object",
-  //         "properties": {
-  //           "enabled": {
-  //             "title": "Enabled",
-  //             "type": "boolean"
-  //           },
-  //           "deviceType": {
-  //             "title": "Device Type",
-  //             "type": "string"
-  //           },
-  //           "displayName": {
-  //             "title": "Display Name",
-  //             "type": "string"
-  //           }
-  //         }
-  //       }
-  //     },
-  //     "ignoredDevices" : {
-  //       "type": "object",
-  //       "title": "Ignored Devices",
-  //       "properties": {
-  //         "ignoredDevicesList": {
-  //           "type": "string",
-  //           "title": "Enter devices to ignore one per line:"
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-  //
-  // plugin.uiSchema = {
-  //   "ignoredDevices": {
-  //     "ignoredDevicesList": {
-  //       "ui:widget": "textarea",
-  //       "ui:options": {
-  //         "rows": 7
-  //       }
-  //     }
-  //   }
-  // }
 
   function readData(data) {
     var buf = new Int64LE(Number(data)).toBuffer()
