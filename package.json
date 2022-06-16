@@ -24,13 +24,17 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "debug": "^2.2.0",
-    "concentrate2": "^0.0.1",
     "bitfield": "^1.1.2",
+    "concentrate2": "^0.0.1",
+    "debug": "^2.2.0",
     "int64-buffer": "^0.1.10",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@canboat/canboatjs": "^1.22.2",
+    "@signalk/n2k-signalk": "^2.5.1",
+    "@signalk/server-api": "^1.39.0",
+    "@signalk/signalk-schema": "^1.6.0",
     "chai": "~4.1.0",
     "chai-json-equal": "0.0.1",
     "chai-things": "0.2",

@@ -12,6 +12,12 @@ app.handleMessage = (id, delta) => {
   result = delta
 }
 
+app.debug = (x) => {
+}
+
+app.setPluginStatus = (x) => {
+}
+
 const plugin = require('../index')(app)
 
 describe('Read pgn 65280', () => {

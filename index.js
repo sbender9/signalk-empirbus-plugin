@@ -68,6 +68,8 @@ const Concentrate2 = require("concentrate2");
 const Bitfield = require("bitfield")
 const Int64LE = require('int64-buffer').Int64LE
 const _ = require('lodash')
+const canboatMappings = require('./pgns.json')
+const n2kMappings = require('./n2k-signalk')
 
 const manufacturerCode = "Empir Bus" // According to http://www.nmea.org/Assets/20140409%20nmea%202000%20registration%20list.pdf
 const pgnApiNumber = 65280 // NMEA2000 Proprietary PGN 65280 – Single Frame, Destination Address Global
@@ -93,9 +95,53 @@ module.exports = function(app) {
   plugin.start = function(theOptions) {
     app.debug('Starting: EmpirBus NXT Control')
 
+    app.emitPropertyValue('canboat-custom-pgns', canboatMappings)
+    app.emitPropertyValue('pgn-to-signalk', n2kMappings)
+
     options = theOptions
 
-    app.on('N2KAnalyzerOut', plugin.listener)
+    let command = {
+      context: "vessels.self",
+      subscribe: [{
+        path: `electrical.switches.*`,
+        period: 1000
+      }]
+    }
+
+    app.debug('subscribe %j', command)
+
+    app.subscriptionmanager.subscribe(command, onStop, subscription_error, delta => {
+      delta.updates.forEach(update => {
+        if ( update.values ) {
+          update.values.forEach(value => {
+            /*
+            const path = value.path
+            if ( path.startsWith('electrical.switches.empirBusNxt') ) {
+              if ( path.endsWith('dimmingLevel') 
+              if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
+                app.registerActionHandler('vessels.self',
+                                          `${dimmerPath}.state`,
+                                          getActionHandler({
+                                            instance: status.instance,
+                                            empirbusIndex: empirbusIndex,
+                                            type: 'state'
+                                          }))
+                app.registerActionHandler('vessels.self',
+                                          `${dimmerPath}.dimmingLevel`,
+                                          getActionHandler({
+                                            instance: status.instance,
+                                            empirbusIndex: empirbusIndex,
+                                    type: 'dimmerLevel'
+                                          }))
+              }
+            }
+            */
+          })
+        }
+      })
+    })
+
+    //app.on('N2KAnalyzerOut', plugin.listener)
     app.setPluginStatus('Waiting for NMEA2000 connect')
 
     app.on('nmea2000OutAvailable', () => {
