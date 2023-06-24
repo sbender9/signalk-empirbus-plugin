@@ -42,7 +42,7 @@
 //
 // electrical/switches/<identifier>/dimmingLevel/meta/units (ratio)
 // electrical/switches/<identifier>/dimmingLevel/meta/description": "Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%"
-// electrical/switches/<identifier>/dimmingLevel/meta/displayName   (System name of control, e.g. Switch 0.8 + "brightness")
+// electrical/switches/<identifier>/dimmingLevel/meta/displayName   (System name of brightness, e.g. "Switch 0.8 brightness")
 //
 // REMOVED: electrical/switches/<identifier>/name   (System name of control, e.g. Switch 0.8)
 //

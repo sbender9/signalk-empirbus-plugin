@@ -19,18 +19,16 @@ The dimmer values and switch states are stored in the following Rest API keys:
 `electrical/switches/<identifier>`  
 `electrical/switches/<identifier>/state`  (true|false)  
 `electrical/switches/<identifier>/dimmingLevel`  (0..1)  
-`electrical/switches/<identifier>/type`   (switch | dimmer)  
-`electrical/switches/<identifier>/name`   (System name of control. In EmpirBus devices are numbered 1..8, so device names numbered accordingly 1..8, e.g. Switch 0.8)  
+`electrical/switches/<identifier>/type`   ("switch" | "dimmer")  
 
-`electrical/switches/<identifier>/meta/displayName`   (Display name of control)  
+`electrical/switches/<identifier>/state/meta/units`   ("bool")  
+`electrical/switches/<identifier>/state/meta/displayName`   (System name of control. While instances start with 0, in EmpirBus devices are numbered 1..8, so device names numbered accordingly 1..8, e.g. Switch 0.8)  
+`electrical/switches/<identifier>/state/meta/associatedDevice/instance` (Technical device address: Instance in EmpirBus API)   
+`electrical/switches/<identifier>/state/meta/associatedDevice/device` (Technical device address: Device in instance in EmpirBus API e.g. "switch 1" or "dimmer 1)  
 
-`electrical/switches/<identifier>/meta/associatedDevice/instance` (Technical device address: Instance in EmpirBus API)   
-`electrical/switches/<identifier>/meta/associatedDevice/device` (Technical device address: Device in instance in EmpirBus API e.g. "switch 1" or "dimmer 1)  
-`electrical/switches/<identifier>/meta/source` (Information what plugin needs to take care of device)  
-`electrical/switches/<identifier>/meta/dataModel` (Bus Data Model used in the EmpirBus programming, currently only Data Model 2 is supported)  
-
-`electrical/switches/<identifier>/meta/manufacturer/name`  ("EmpirBus")  
-`electrical/switches/<identifier>/meta/manufacturer/model`  ("NXT DCM")  
+`electrical/switches/<identifier>/state/meta/units`   ("ratio")  
+`electrical/switches/<identifier>/state/meta/description`   ("Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%")  
+`electrical/switches/<identifier>/state/meta/displayName`   (System name of brightness, e.g. "Switch 0.8 brightness")  
 
 `<identifier>` is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary device address (systemname-deviceaddress), e.g. for EmpirBus NXT devices this is empirBusNxt-instance<instance>-dimmer|switch<#>  
 `<instance>` is the instance of the respective “Receive from network” EmpirBus NXT API component for 3rd party communication 0..49  
