@@ -34,18 +34,28 @@
 // electrical/switches/<identifier>/state  (true|false)
 // electrical/switches/<identifier>/dimmingLevel  (0..1)
 // electrical/switches/<identifier>/type   (switch | dimmer)
-// electrical/switches/<identifier>/name   (System name of control, e.g. Switch 0.8)
 //
-// electrical/switches/<identifier>/meta/displayName   (Display name of control)
+// electrical/switches/<identifier>/state/meta/units (bool)
+// electrical/switches/<identifier>/state/meta/displayName   (System name of control, e.g. Switch 0.8)
+// electrical/switches/<identifier>/state/meta/associatedDevice/instance (Technical device address: Instance in EmpirBus API)
+// electrical/switches/<identifier>/state/meta/associatedDevice/device (Technical device address: Device in instance in EmpirBus API e.g. "switch 1" or "dimmer 1")
 //
-// electrical/switches/<identifier>/meta/associatedDevice/instance (Technical device address: Instance in EmpirBus API)
-// electrical/switches/<identifier>/meta/associatedDevice/device (Technical device address: Device in instance in EmpirBus API e.g. "switch 1" or "dimmer 1")
-
-// electrical/switches/<identifier>/meta/source (Information what plugin needs to take care of the device)
-// electrical/switches/<identifier>/meta/dataModel (Bus Data Model used in the EmpirBus programming, currently only Data Model 2 is supported)
+// electrical/switches/<identifier>/dimmingLevel/meta/units (ratio)
+// electrical/switches/<identifier>/dimmingLevel/meta/description": "Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%"
+// electrical/switches/<identifier>/dimmingLevel/meta/displayName   (System name of control, e.g. Switch 0.8 + "brightness")
 //
-// electrical/switches/<identifier>/meta/manufacturer/name ("EmpirBus")
-// electrical/switches/<identifier>/meta/manufacturer/model ("NXT DCM")
+// REMOVED: electrical/switches/<identifier>/name   (System name of control, e.g. Switch 0.8)
+//
+// REMOVED: electrical/switches/<identifier>/meta/displayName   (Display name of control)
+//
+// REMOVED: electrical/switches/<identifier>/meta/associatedDevice/instance (Technical device address: Instance in EmpirBus API)
+// REMOVED: electrical/switches/<identifier>/meta/associatedDevice/device (Technical device address: Device in instance in EmpirBus API e.g. "switch 1" or "dimmer 1")
+//
+// REMOVED: electrical/switches/<identifier>/meta/source (Information what plugin needs to take care of the device)
+// REMOVED: electrical/switches/<identifier>/meta/dataModel (Bus Data Model used in the EmpirBus programming, currently only Data Model 2 is supported)
+//
+// REMOVED: electrical/switches/<identifier>/meta/manufacturer/name ("EmpirBus")
+// REMOVED: electrical/switches/<identifier>/meta/manufacturer/model ("NXT DCM")
 //
 //
 // <identifier> is the device identifier, concattenated from the name of digital switching system and a system plugin proprietary decive address (systemname-deviceaddress),
@@ -129,6 +139,7 @@ module.exports = function(app) {
 
   function createDelta(status) {
     var values = []
+    var meta = []
 
     status.dimmers.forEach((value, index) => {
       var empirbusIndex = index +1   // EmpirBus devices are numbered 1..8, starting with 1
@@ -145,34 +156,31 @@ module.exports = function(app) {
         {
           path: `${dimmerPath}.type`,
           value: "dimmer"
+        }
+      ]
+      var dimmerMeta = [
+        {
+          path: `${dimmerPath}.state`,
+          value: {
+            units: `bool`,
+            displayName: `Dimmer ${status.instance}.${empirbusIndex}`,
+            associatedDevice: {
+              instance: status.instance,          // Technical address: Instance in EmpirBus API
+              device: `dimmer ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+            }
+          }
         },
         {
-          path: `${dimmerPath}.name`,
-          value: `Dimmer ${status.instance}.${empirbusIndex}`
-        },
-        {
-          path: `${dimmerPath}.meta.associatedDevice.instance`,
-          value: status.instance                         // Technical address: Instance in EmpirBus API
-        },
-        {
-          path: `${dimmerPath}.meta.associatedDevice.device`,
-          value: `dimmer ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus API
-        },
-        {
-          path: `${dimmerPath}.meta.source`,
-          value: switchingIdentifier
-        },
-        {
-          path: `${dimmerPath}.meta.dataModel`,
-          value: 2
-        },
-        {
-          path: `${dimmerPath}.meta.manufacturer.name`,
-          value: "EmpirBus"
-        },
-        {
-          path: `${dimmerPath}.meta.manufacturer.model`,
-          value: "NXT DCM"
+          path: `${dimmerPath}.dimmingLevel`,
+          value: {
+            units: `ratio`,
+            description: `Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%`,
+            displayName: `Dimmer ${status.instance}.${empirbusIndex} brightness`,
+            associatedDevice: {
+              instance: status.instance,          // Technical address: Instance in EmpirBus API
+              device: `dimmer ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+            }
+          }
         }
       ]
 
@@ -198,6 +206,7 @@ module.exports = function(app) {
       }
 
       values = values.concat(dimmerValues)
+      meta = meta.concat(dimmerMeta)
     })
 
     for (var index = 2; index < status.switches.length; index++) {  // status.switches[0] and [1] handled above as dimmer states
@@ -213,34 +222,19 @@ module.exports = function(app) {
         {
           path: `${switchPath}.type`,
           value: "switch"
-        },
+        }
+      ]
+      var switchMeta = [
         {
-          path: `${switchPath}.name`,
-          value: `Switch ${status.instance}.${empirbusIndex}`
-        },
-        {
-          path: `${switchPath}.meta.associatedDevice.instance`,
-          value: status.instance                         // Technical address: Instance in EmpirBus API
-        },
-        {
-          path: `${switchPath}.meta.associatedDevice.device`,
-          value: `switch ${empirbusIndex}`               // Technical address: Device in instance of EmpirBus
-        },
-        {
-          path: `${switchPath}.meta.source`,
-          value: switchingIdentifier
-        },
-        {
-          path: `${switchPath}.meta.dataModel`,
-          value: 2
-        },
-        {
-          path: `${switchPath}.meta.manufacturer.name`,
-          value: "EmpirBus"
-        },
-        {
-          path: `${switchPath}.meta.manufacturer.model`,
-          value: "NXT DCM"
+          path: `${switchPath}.state`,
+          value: {
+            units: `bool`,
+            displayName: `Switch ${status.instance}.${empirbusIndex}`,
+            associatedDevice: {
+              instance: status.instance,          // Technical address: Instance in EmpirBus API
+              device: `switch ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+            }
+          }
         }
       ]
       if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
@@ -253,6 +247,7 @@ module.exports = function(app) {
                                               }))
       }
       values = values.concat(switchValues)
+      meta = meta.concat(switchMeta)
     }
 
     registeredForPut[status.instance] = true
@@ -261,7 +256,8 @@ module.exports = function(app) {
       updates: [
         {
           timestamp: (new Date()).toISOString(),
-          values: values
+          values: values,
+          meta
         }
       ]
     }
