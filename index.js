@@ -95,6 +95,7 @@ module.exports = function(app) {
   var empirBusInstance
   var registeredForPut = {}
   var currentStateByInstance = {}
+  var knownDevices = []
 
   plugin.id = 'signalk-empirbus-nxt'
   plugin.name = 'EmpirBus NXT Control'
@@ -144,7 +145,7 @@ module.exports = function(app) {
     status.dimmers.forEach((value, index) => {
       var empirbusIndex = index +1   // EmpirBus devices are numbered 1..8, starting with 1
       var dimmerPath = `${instancePath}.${switchingIdentifier}-instance${status.instance}-dimmer${empirbusIndex}`
-      var dimmerValues = [
+      values.push(
         {
           path: `${dimmerPath}.state`,
           value: status.switches[index] ? true : false
@@ -157,32 +158,36 @@ module.exports = function(app) {
           path: `${dimmerPath}.type`,
           value: "dimmer"
         }
-      ]
-      var dimmerMeta = [
-        {
-          path: `${dimmerPath}.state`,
-          value: {
-            units: `bool`,
-            displayName: `Dimmer ${status.instance}.${empirbusIndex}`,
-            associatedDevice: {
-              instance: status.instance,          // Technical address: Instance in EmpirBus API
-              device: `dimmer ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+      )
+
+      if (!knownDevices.includes(dimmerPath)) {
+        knownDevices.push(dimmerPath)
+        meta.push(
+          {
+            path: `${dimmerPath}.state`,
+            value: {
+              units: `bool`,
+              displayName: `Dimmer ${status.instance}.${empirbusIndex}`,
+              associatedDevice: {
+                instance: status.instance,          // Technical address: Instance in EmpirBus API
+                device: `dimmer ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+              }
+            }
+          },
+          {
+            path: `${dimmerPath}.dimmingLevel`,
+            value: {
+              units: `ratio`,
+              description: `Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%`,
+              displayName: `Dimmer ${status.instance}.${empirbusIndex} brightness`,
+              associatedDevice: {
+                instance: status.instance,          // Technical address: Instance in EmpirBus API
+                device: `dimmer ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+              }
             }
           }
-        },
-        {
-          path: `${dimmerPath}.dimmingLevel`,
-          value: {
-            units: `ratio`,
-            description: `Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%`,
-            displayName: `Dimmer ${status.instance}.${empirbusIndex} brightness`,
-            associatedDevice: {
-              instance: status.instance,          // Technical address: Instance in EmpirBus API
-              device: `dimmer ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
-            }
-          }
-        }
-      ]
+        )
+      }
 
       if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
         app.registerActionHandler('vessels.self',
@@ -205,8 +210,6 @@ module.exports = function(app) {
         app.debug('Dimmer Level saved:', Number(value))
       }
 
-      values = values.concat(dimmerValues)
-      meta = meta.concat(dimmerMeta)
     })
 
     for (var index = 2; index < status.switches.length; index++) {  // status.switches[0] and [1] handled above as dimmer states
@@ -214,7 +217,8 @@ module.exports = function(app) {
       var value = status.switches[index]
       var empirbusIndex = index +1
       var switchPath = `${instancePath}.${switchingIdentifier}-instance${status.instance}-switch${empirbusIndex}`
-      var switchValues = [
+
+      values.push(
         {
           path: `${switchPath}.state`,
           value: value ? true : false
@@ -223,31 +227,34 @@ module.exports = function(app) {
           path: `${switchPath}.type`,
           value: "switch"
         }
-      ]
-      var switchMeta = [
-        {
-          path: `${switchPath}.state`,
-          value: {
-            units: `bool`,
-            displayName: `Switch ${status.instance}.${empirbusIndex}`,
-            associatedDevice: {
-              instance: status.instance,          // Technical address: Instance in EmpirBus API
-              device: `switch ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+      )
+
+      if (!knownDevices.includes(switchPath)) {
+        knownDevices.push(switchPath)
+        meta.push(
+          {
+            path: `${switchPath}.state`,
+            value: {
+              units: `bool`,
+              displayName: `Switch ${status.instance}.${empirbusIndex}`,
+              associatedDevice: {
+                instance: status.instance,          // Technical address: Instance in EmpirBus API
+                device: `switch ${empirbusIndex}`   // Technical address: Device in instance of EmpirBus
+              }
             }
           }
-        }
-      ]
+        )
+      }
+
       if ( !registeredForPut[status.instance] && app.registerActionHandler ) {
         app.registerActionHandler('vessels.self',
-                                              `${switchPath}.state`,
-                                              getActionHandler({
-                                                instance: status.instance,
-                                                empirbusIndex: empirbusIndex,
-                                                type: 'state'
-                                              }))
+                                  `${switchPath}.state`,
+                                  getActionHandler({
+                                    instance: status.instance,
+                                    empirbusIndex: empirbusIndex,
+                                    type: 'state'
+                                  }))
       }
-      values = values.concat(switchValues)
-      meta = meta.concat(switchMeta)
     }
 
     registeredForPut[status.instance] = true
