@@ -1,16 +1,21 @@
 {
-  "name": "signalk-empirbusnxt-plugin",
+  "name": "signalk-empirbus-plugin",
   "version": "1.1.4",
-  "description": "Signal K server plugin to monitor and control an EmpirBus NXT via application specific PGN",
-  "signalk-plugin-enabled-by-default": true,
+  "description": "Signal K server plugin to monitor and control an EmpirBus NXT via application-specific PGNs.",
   "main": "index.js",
+  "signalK": {
+    "pluginSchema": "index.js"
+  },
+  "signalk-plugin-enabled-by-default": true,
   "scripts": {
     "test": "mocha --exit"
   },
   "keywords": [
     "signalk-node-server-plugin",
     "signalk-category-hardware",
-    "signalk-category-digital-switching"
+    "signalk-category-digital-switching",
+    "empirbus",
+    "nmea2000"
   ],
   "author": {
     "name": "Scott Bender",
@@ -19,7 +24,7 @@
   "contributors": [
     {
       "name": "Christian Wegerhoff",
-      "email": "wegerhoff@mediaworx.com"
+      "email": "christian.wegerhoff@icloud.com"
     }
   ],
   "license": "ISC",
@@ -38,6 +43,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sbender9/signalk-empirebus-plugin"
+    "url": "https://github.com/sbender9/signalk-empirbus-plugin"
+  },
+  "homepage": "https://github.com/sbender9/signalk-empirbus-plugin",
+  "bugs": {
+    "url": "https://github.com/sbender9/signalk-empirbus-plugin/issues"
   }
 }
