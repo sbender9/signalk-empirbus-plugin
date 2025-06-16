@@ -1,11 +1,8 @@
 {
-  "name": "signalk-empirbus-plugin",
+  "name": "signalk-empirbusnxt-plugin",
   "version": "1.1.4",
-  "description": "Signal K server plugin to monitor and control an EmpirBus NXT via application-specific PGNs.",
+  "description": "Signal K server plugin to monitor and control a Garmin EmpirBus NXT via application-specific PGN.",
   "main": "index.js",
-  "signalK": {
-    "pluginSchema": "index.js"
-  },
   "signalk-plugin-enabled-by-default": true,
   "scripts": {
     "test": "mocha --exit"
