@@ -22,7 +22,7 @@ describe('Read pgn 65280', () => {
     validate(delta)
   }),
   it('from actisense works', () => {
-    const pgn = {"timestamp":"2018-01-19T15:37:01.781Z","prio":2,"src":0,"dst":255,"pgn":65280,"description":"Manufacturer Proprietary single-frame non-addressed","fields":{ "Manufacturer Code": "Empirbus","Industry Code":"Marine","Data":"93475265704961"}}
+    const pgn = {"timestamp":"2018-01-19T15:37:01.781Z","prio":2,"src":0,"dst":255,"pgn":65280,"description":"Manufacturer Proprietary single-frame non-addressed","fields":{ "Manufacturer Code": 304,"Industry Code":"Marine","Data":"93475265704961"}}
     plugin.listener(pgn)
     assert.ok(result, 'no result')
     validate(result)
