@@ -390,7 +390,7 @@ module.exports = function(app) {
 
 
   function readData(data) {
-    var buf = new Int64LE(Number(data)).toBuffer()
+    var buf = Buffer.from(data.replace(/\s/g, ''), 'hex')
     return readDataBuffer(buf)
   }
   plugin.readData = readData
