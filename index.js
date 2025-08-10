@@ -113,7 +113,7 @@ module.exports = function(app) {
       setTimeout( () => {
         sendStatusRequest()
         app.setPluginStatus('ISO request PGN 059904 sent for sync')
-        console.log('ISO request PGN 059904 sent on poweron for easy sync')
+        app.debug('ISO request PGN 059904 sent on poweron for easy sync')
       }, 2000)
     })
   }
