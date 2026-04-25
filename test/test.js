@@ -1,193 +1,190 @@
 const assert = require('assert')
+const EventEmitter = require('events')
 const _ = require('lodash')
-var chai = require('chai')
+const chai = require('chai')
+
 chai.Should()
-chai.use(require('chai-things'))
-chai.use(require('chai-json-equal'));
+chai.use(require('chai-json-equal'))
 
-var app = {}
-var result
+function createApp() {
+  const app = new EventEmitter()
+  app.handlers = []
 
-app.handleMessage = (id, delta) => {
-  result = delta
+  app.debug = () => {}
+  app.setPluginStatus = () => {}
+  app.setPluginError = () => {}
+  app.registerActionHandler = (context, path, handler) => {
+    app.handlers.push({ context, path, handler })
+  }
+  app.handleMessage = (id, delta) => {
+    app.lastMessage = { id, delta }
+  }
+
+  return app
 }
 
-const plugin = require('../index')(app)
+describe('EmpirBus PGN 65280 handling', () => {
+  it('creates the expected delta from a decoded buffer', () => {
+    const app = createApp()
+    const plugin = require('../index')(app)
 
-describe('Read pgn 65280', () => {
-  it('from buffer works', () => {
-    const correct_buffer = new Buffer(new Uint8Array([0x00,0xf4,0x01,0xe8,0x03,0x55]))
-    var state = plugin.readDataBuffer(correct_buffer)
-    var delta = plugin.createDelta(state)
-    validate(delta)
-  }),
-  it('from actisense works', () => {
-    const pgn = {"timestamp":"2018-01-19T15:37:01.781Z","prio":2,"src":0,"dst":255,"pgn":65280,"description":"Manufacturer Proprietary single-frame non-addressed","fields":{ "Manufacturer Code": 304,"Industry Code":"Marine","Data":"93475265704961"}}
-    plugin.listener(pgn)
-    assert.ok(result, 'no result')
-    validate(result)
-  }),
-  it('to actisense', () => {
+    const state = plugin.readDataBuffer(Buffer.from([0x00, 0xf4, 0x01, 0xe8, 0x03, 0x55]))
+    const delta = plugin.createDelta(state)
+
+    toFlat(delta).should.jsonEqual(expectedFlat)
+  })
+
+  it('emits state from YD raw canboatjs output fallback', () => {
+    const app = createApp()
+    const plugin = require('../index')(app)
+
+    plugin.start({})
+
+    app.emit('canboatjs:rawoutput', '2026-04-24T15:00:00.000Z 2 1CFF000B 30 99 01 F4 01 E8 03 55')
+
+    assert.ok(app.lastMessage, 'no delta emitted from raw fallback')
+    toFlat(app.lastMessage.delta).should.jsonEqual(expectedFlat)
+
+    plugin.stop()
+  })
+
+  it('serializes state to actisense format', () => {
+    const app = createApp()
+    const plugin = require('../index')(app)
     const state = {
-      dimmers: [ 500, 1000 ],
-      lastDimmingLevels: [ 1000, 1000 ],
-      switches: [ 1, 0, 1, 0, 1, 0, 1, 0 ]
+      dimmers: [500, 1000],
+      lastDimmingLevels: [1000, 1000],
+      switches: [1, 0, 1, 0, 1, 0, 1, 0]
     }
-    var actisense = plugin.generateStatePGN(0, state)
+
+    const actisense = plugin.generateStatePGN(0, state)
+
     actisense.substr(25).should.equal('2,65280,0,255,8,30,99,00,f4,01,e8,03,55')
+  })
+
+  it('returns a clear error when PUT arrives before instance state is cached', () => {
+    const app = createApp()
+    const plugin = require('../index')(app)
+
+    plugin.createDelta(plugin.readDataBuffer(Buffer.from([0x00, 0xf4, 0x01, 0xe8, 0x03, 0x55])))
+
+    const handler = app.handlers.find(entry => entry.path === 'electrical.switches.empirBusNxt-instance0-dimmer1.state')
+
+    assert.ok(handler, 'no action handler registered')
+
+    const result = handler.handler('vessels.self', handler.path, true)
+
+    result.statusCode.should.equal(503)
+    result.message.should.equal('No current state cached for EmpirBus instance 0. Wait for a PGN 65280 status update before sending PUT requests.')
   })
 })
 
-var expected = {
-  "electrical": {
-    "switches": {
-      "empirBusNxt-instance0-dimmer1": {
-        "state": true,
-        "dimmingLevel": 0.5,
-        "type": "dimmer",
-        "name": "Dimmer 0.1",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"dimmer 1"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+const expectedFlat = {
+  electrical: {
+    switches: {
+      'empirBusNxt-instance0-dimmer1': {
+        state: true,
+        dimmingLevel: 0.5,
+        type: 'dimmer'
       },
-      "empirBusNxt-instance0-dimmer2": {
-        "state": false,
-        "dimmingLevel": 1,
-        "type": "dimmer",
-        "name": "Dimmer 0.2",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"dimmer 2"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+      'empirBusNxt-instance0-dimmer2': {
+        state: false,
+        dimmingLevel: 1,
+        type: 'dimmer'
       },
-      "empirBusNxt-instance0-switch3": {
-        "state": true,
-        "type": "switch",
-        "name": "Switch 0.3",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"switch 3"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+      'empirBusNxt-instance0-switch3': {
+        state: true,
+        type: 'switch'
       },
-      "empirBusNxt-instance0-switch4": {
-        "state": false,
-        "type": "switch",
-        "name": "Switch 0.4",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"switch 4"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+      'empirBusNxt-instance0-switch4': {
+        state: false,
+        type: 'switch'
       },
-      "empirBusNxt-instance0-switch5": {
-        "state": true,
-        "type": "switch",
-        "name": "Switch 0.5",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"switch 5"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+      'empirBusNxt-instance0-switch5': {
+        state: true,
+        type: 'switch'
       },
-      "empirBusNxt-instance0-switch6": {
-        "state": false,
-        "type": "switch",
-        "name": "Switch 0.6",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"switch 6"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+      'empirBusNxt-instance0-switch6': {
+        state: false,
+        type: 'switch'
       },
-      "empirBusNxt-instance0-switch7": {
-        "state": true,
-        "type": "switch",
-        "name": "Switch 0.7",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"switch 7"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+      'empirBusNxt-instance0-switch7': {
+        state: true,
+        type: 'switch'
       },
-      "empirBusNxt-instance0-switch8": {
-        "state": false,
-        "type": "switch",
-        "name": "Switch 0.8",
-        "meta": {
-          "associatedDevice": {"instance":0,"device":"switch 8"},
-          "source": "empirBusNxt",
-          "dataModel": 2,
-          "manufacturer": {
-            "name": "EmpirBus",
-            "model": "NXT DCM"
-          }
-        }
+      'empirBusNxt-instance0-switch8': {
+        state: false,
+        type: 'switch'
       }
     }
   }
 }
 
-function validate(delta) {
-  var flat = toFlat(delta)
-  //console.log(JSON.stringify(flat, null, 2))
-
-  flat.should.jsonEqual(expected)
-
-  //console.log(delta.updates[0].values[0])
-  /*
-  delta.updates[0].values[0].path.should.equal('electrical.controls.empirBusNxt-instance1-dimmer1.state')
-  delta.updates[0].values[0].value.should.equal('on')
-
-  delta.updates[0].values[1].path.should.equal('electrical.controls.empirBusNxt-instance1-dimmer1.brightness')
-  delta.updates[0].values[1].value.should.equal(0.5)
-
-  var expected = 'on'
-  for ( var i = 0; i < 8; i++ ) {
-    delta.updates[0].values[i+2].path.should.equal(`electrical.controls.empirBusNxt-instance1-switch${i+1}.state`)
-    delta.updates[0].values[i+2].value.should.equal(expected)
-    expected = expected === 'on' ? 'off' : 'on'
-  }
-*/
-}
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-dimmer1.state.meta', {
+  units: 'bool',
+  displayName: 'Dimmer 0.1',
+  associatedDevice: { instance: 0, device: 'dimmer 1' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-dimmer1.dimmingLevel.meta', {
+  units: 'ratio',
+  description: 'Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%',
+  displayName: 'Dimmer 0.1 brightness',
+  associatedDevice: { instance: 0, device: 'dimmer 1' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-dimmer2.state.meta', {
+  units: 'bool',
+  displayName: 'Dimmer 0.2',
+  associatedDevice: { instance: 0, device: 'dimmer 2' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-dimmer2.dimmingLevel.meta', {
+  units: 'ratio',
+  description: 'Dimmer brightness ratio, 0<=ratio<=1, 1 is 100%',
+  displayName: 'Dimmer 0.2 brightness',
+  associatedDevice: { instance: 0, device: 'dimmer 2' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-switch3.state.meta', {
+  units: 'bool',
+  displayName: 'Switch 0.3',
+  associatedDevice: { instance: 0, device: 'switch 3' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-switch4.state.meta', {
+  units: 'bool',
+  displayName: 'Switch 0.4',
+  associatedDevice: { instance: 0, device: 'switch 4' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-switch5.state.meta', {
+  units: 'bool',
+  displayName: 'Switch 0.5',
+  associatedDevice: { instance: 0, device: 'switch 5' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-switch6.state.meta', {
+  units: 'bool',
+  displayName: 'Switch 0.6',
+  associatedDevice: { instance: 0, device: 'switch 6' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-switch7.state.meta', {
+  units: 'bool',
+  displayName: 'Switch 0.7',
+  associatedDevice: { instance: 0, device: 'switch 7' }
+})
+_.set(expectedFlat, 'electrical.switches.empirBusNxt-instance0-switch8.state.meta', {
+  units: 'bool',
+  displayName: 'Switch 0.8',
+  associatedDevice: { instance: 0, device: 'switch 8' }
+})
 
 function toFlat(delta) {
-  var res = {}
+  const res = {}
+
   delta.updates.forEach(update => {
     update.values.forEach(pathValue => {
       _.set(res, pathValue.path, pathValue.value)
     })
+
+    ;(update.meta || []).forEach(pathValue => {
+      _.set(res, `${pathValue.path}.meta`, pathValue.value)
+    })
   })
+
   return res
 }
